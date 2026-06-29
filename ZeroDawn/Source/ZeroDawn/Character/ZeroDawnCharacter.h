@@ -206,6 +206,7 @@ protected:
 	void StopFire();
 	void Interact();
 	void Melee();
+	void InspectWeapon();
 
 	// Movement
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
@@ -259,6 +260,7 @@ protected:
 	class UInputAction* ReloadAction;
 	class UInputAction* InteractAction;
 	class UInputAction* MeleeAction;
+	class UInputAction* InspectAction;
 
 	void CacheInputActions();
 };

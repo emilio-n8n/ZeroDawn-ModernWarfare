@@ -1,7 +1,9 @@
 #include "ZeroDawnWeapon.h"
 #include "../Character/ZeroDawnCharacter.h"
 #include "../WeaponSystem/ZeroDawnWeaponComponent.h"
+#include "../WeaponSystem/ZeroDawnCameraShake.h"
 #include "../Multiplayer/ZeroDawnPlayerState.h"
+#include "../UI/ZeroDawnHitmarker.h"
 #include "Engine/DamageEvents.h"
 
 AZeroDawnWeapon::AZeroDawnWeapon()
@@ -215,6 +217,8 @@ void AZeroDawnWeapon::ServerFireShot_Implementation(FVector_NetQuantize StartLoc
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECC_Visibility, QueryParams);
 
+	bool bHeadshot = false;
+
 	if (bHit && Hit.GetActor())
 	{
 		FPointDamageEvent DamageEvent(Damage, Hit, -Direction, nullptr);
@@ -223,6 +227,7 @@ void AZeroDawnWeapon::ServerFireShot_Implementation(FVector_NetQuantize StartLoc
 			Hit.BoneName.ToString().Contains("neck", ESearchCase::IgnoreCase))
 		{
 			Damage *= WeaponStats.HeadshotMultiplier;
+			bHeadshot = true;
 		}
 
 		Hit.GetActor()->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), this);
@@ -231,6 +236,18 @@ void AZeroDawnWeapon::ServerFireShot_Implementation(FVector_NetQuantize StartLoc
 		if (OwnerChar)
 		{
 			OwnerChar->MulticastPlayHitEffect(Hit.Location, Hit.ImpactNormal.Rotation());
+
+			APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
+			if (PC)
+			{
+				UZeroDawnCameraShake::PlayHitShake(PC, bHeadshot ? 1.5f : 0.8f);
+			}
+
+			UZeroDawnHitmarker* Hitmarker = OwnerChar->FindComponentByClass<UZeroDawnHitmarker>();
+			if (Hitmarker)
+			{
+				Hitmarker->MulticastHitmarker(bHeadshot);
+			}
 		}
 	}
 

@@ -1,5 +1,7 @@
 #include "ZeroDawnKillstreakManager.h"
 #include "../Character/ZeroDawnCharacter.h"
+#include "../UI/ZeroDawnKillstreakHUD.h"
+#include "../WeaponSystem/ZeroDawnCameraShake.h"
 
 UZeroDawnKillstreakManager::UZeroDawnKillstreakManager()
 {
@@ -22,6 +24,22 @@ void UZeroDawnKillstreakManager::CheckKillstreaks(int32 CurrentKillstreak)
 		if (CurrentKillstreak >= Req.Value)
 		{
 			OnKillstreakAwarded(Req.Key);
+		}
+	}
+
+	AZeroDawnCharacter* OwnerChar = Cast<AZeroDawnCharacter>(GetOwner());
+	if (OwnerChar)
+	{
+		UZeroDawnKillstreakHUD* KHUD = OwnerChar->FindComponentByClass<UZeroDawnKillstreakHUD>();
+		if (KHUD)
+		{
+			KHUD->MulticastShowStreak(CurrentKillstreak);
+		}
+
+		APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
+		if (PC)
+		{
+			UZeroDawnCameraShake::PlayKillstreakShake(PC);
 		}
 	}
 }

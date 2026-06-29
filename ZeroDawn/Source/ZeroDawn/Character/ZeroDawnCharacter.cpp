@@ -2,11 +2,14 @@
 #include "../Weapon/ZeroDawnWeapon.h"
 #include "../WeaponSystem/ZeroDawnWeaponComponent.h"
 #include "../WeaponSystem/ZeroDawnWeaponInventory.h"
+#include "../WeaponSystem/ZeroDawnWeaponInspect.h"
+#include "../WeaponSystem/ZeroDawnCameraShake.h"
 #include "../Progression/ZeroDawnKillstreakManager.h"
 #include "../Progression/ZeroDawnProgressionManager.h"
 #include "../Progression/ZeroDawnPerkSystem.h"
 #include "../Multiplayer/ZeroDawnPlayerState.h"
 #include "../UI/ZeroDawnHUD.h"
+#include "../UI/ZeroDawnHitmarker.h"
 
 AZeroDawnCharacter::AZeroDawnCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -160,6 +163,12 @@ void AZeroDawnCharacter::MulticastOnDeath_Implementation()
 		WeaponComponent->HideWeapons();
 	}
 
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		UZeroDawnCameraShake::PlayExplosionShake(PC);
+	}
+
 	if (FirstPersonCameraComponent)
 	{
 		FirstPersonCameraComponent->bUsePawnControlRotation = false;
@@ -227,6 +236,12 @@ void AZeroDawnCharacter::AddKill()
 	if (KillstreakManager)
 	{
 		KillstreakManager->CheckKillstreaks(CurrentKillstreak);
+	}
+
+	UZeroDawnHitmarker* Hitmarker = FindComponentByClass<UZeroDawnHitmarker>();
+	if (Hitmarker)
+	{
+		Hitmarker->MulticastKillConfirmation();
 	}
 }
 
@@ -310,6 +325,9 @@ void AZeroDawnCharacter::CacheInputActions()
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Melee(TEXT("/Game/ZeroDawn/Input/Actions/IA_Melee.IA_Melee"));
 	if (IA_Melee.Succeeded()) MeleeAction = IA_Melee.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Inspect(TEXT("/Game/ZeroDawn/Input/Actions/IA_Inspect.IA_Inspect"));
+	if (IA_Inspect.Succeeded()) InspectAction = IA_Inspect.Object;
 }
 
 void AZeroDawnCharacter::SetupInputs()
@@ -347,6 +365,7 @@ void AZeroDawnCharacter::SetupInputs()
 	if (ReloadAction) EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::Reload);
 	if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::Interact);
 	if (MeleeAction) EnhancedInputComponent->BindAction(MeleeAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::Melee);
+	if (InspectAction) EnhancedInputComponent->BindAction(InspectAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::InspectWeapon);
 }
 
 void AZeroDawnCharacter::Move(const FInputActionValue& Value)
@@ -503,6 +522,16 @@ void AZeroDawnCharacter::Reload()
 }
 
 void AZeroDawnCharacter::Interact() {}
+void AZeroDawnCharacter::InspectWeapon()
+{
+	if (bIsDead) return;
+	UZeroDawnWeaponInspect* Inspect = FindComponentByClass<UZeroDawnWeaponInspect>();
+	if (Inspect)
+	{
+		Inspect->StartInspect();
+	}
+}
+
 void AZeroDawnCharacter::Melee()
 {
 	if (bIsDead) return;
