@@ -1,0 +1,39 @@
+# Unreal Engine
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+Binaries/
+*.sln
+*.sdf
+*.suo
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.xcodeproj
+*.xcworkspace
+.vscode/
+.vs/
+projectfiles.bat
+projectfiles.sh
+
+# Compiled binaries
+*.exe
+*.dll
+*.dylib
+*.so
+*.app
+*.pdb
+*.aps
+
+# macOS
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# IDE
+.idea/
+*.user
