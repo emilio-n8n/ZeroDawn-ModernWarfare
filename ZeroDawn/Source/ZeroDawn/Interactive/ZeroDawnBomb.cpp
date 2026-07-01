@@ -30,6 +30,7 @@ void AZeroDawnBomb::BeginPlay()
 	if (HasAuthority())
 	{
 		BombStartTime = 0.0f;
+		CarriedByCharacter = nullptr;
 	}
 }
 
@@ -57,6 +58,8 @@ void AZeroDawnBomb::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AZeroDawnBomb, bIsPlanted);
 	DOREPLIFETIME(AZeroDawnBomb, bIsDefused);
 	DOREPLIFETIME(AZeroDawnBomb, bIsCarried);
+	DOREPLIFETIME(AZeroDawnBomb, PlantedByTeam);
+	DOREPLIFETIME(AZeroDawnBomb, CarriedByCharacter);
 }
 
 void AZeroDawnBomb::OnRep_IsPlanted()
@@ -83,7 +86,7 @@ void AZeroDawnBomb::OnRep_IsCarried()
 	}
 }
 
-void AZeroDawnBomb::PlantBomb()
+void AZeroDawnBomb::PlantBomb(AActor* Planter)
 {
 	if (!HasAuthority()) return;
 	if (bIsPlanted || bIsDefused) return;
@@ -92,6 +95,18 @@ void AZeroDawnBomb::PlantBomb()
 	bIsPlanted = true;
 	bIsDefused = false;
 	BombStartTime = GetWorld()->GetTimeSeconds();
+
+	// Track who planted and which team
+	if (Planter)
+	{
+		AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(Planter);
+		if (Char)
+		{
+			PlantedByTeam = Char->TeamType;
+		}
+	}
+
+	CarriedByCharacter = nullptr;
 
 	// Detach from any carrying actor and place at current location
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -104,6 +119,18 @@ void AZeroDawnBomb::PlantBomb()
 	OnBombPlantedDelegate.Broadcast();
 }
 
+void AZeroDawnBomb::StartDefuse(AActor* Defuser)
+{
+	if (!HasAuthority()) return;
+	if (!bIsPlanted || bIsDefused) return;
+	if (InteractingDefuser) return; // already being defused
+
+	InteractingDefuser = Defuser;
+
+	// Start the defuse hold timer using DefuseTime
+	GetWorldTimerManager().SetTimer(DefuseTimerHandle, this, &AZeroDawnBomb::CompleteDefuse, DefuseTime, false);
+}
+
 void AZeroDawnBomb::DefuseBomb()
 {
 	if (!HasAuthority()) return;
@@ -113,9 +140,29 @@ void AZeroDawnBomb::DefuseBomb()
 	bIsPlanted = false;
 	BombStartTime = 0.0f;
 
+	// Cancel any ongoing defuse timer
+	GetWorldTimerManager().ClearTimer(DefuseTimerHandle);
+	InteractingDefuser = nullptr;
+
 	OnRep_IsDefused();
 
 	OnBombDefusedDelegate.Broadcast();
+}
+
+void AZeroDawnBomb::CompleteDefuse()
+{
+	if (!HasAuthority()) return;
+	if (!bIsPlanted || bIsDefused) return;
+
+	DefuseBomb();
+}
+
+void AZeroDawnBomb::CancelDefuse()
+{
+	if (!HasAuthority()) return;
+
+	GetWorldTimerManager().ClearTimer(DefuseTimerHandle);
+	InteractingDefuser = nullptr;
 }
 
 void AZeroDawnBomb::MulticastExplode_Implementation()
@@ -140,12 +187,26 @@ void AZeroDawnBomb::OnExploded_Implementation()
 {
 	if (!HasAuthority()) return;
 
+	// Cancel any defuse in progress
+	CancelDefuse();
+
 	MulticastExplode();
 
-	OnBombExplodedDelegate.Broadcast();
+	// Reset bomb state manually (don't call ResetBomb which unhides)
+	bIsPlanted = false;
+	bIsDefused = false;
+	bIsCarried = false;
+	PlantedByTeam = ETeamType::None;
+	CarriedByCharacter = nullptr;
+	BombStartTime = 0.0f;
 
-	// Destroy the bomb after explosion
-	Destroy();
+	BombMesh->SetSimulatePhysics(false);
+	SetActorEnableCollision(false);
+
+	// Hide the bomb visually after explosion
+	SetActorHiddenInGame(true);
+
+	OnBombExplodedDelegate.Broadcast();
 }
 
 void AZeroDawnBomb::ResetBomb()
@@ -155,10 +216,17 @@ void AZeroDawnBomb::ResetBomb()
 	bIsPlanted = false;
 	bIsDefused = false;
 	bIsCarried = false;
+	PlantedByTeam = ETeamType::None;
+	CarriedByCharacter = nullptr;
 	BombStartTime = 0.0f;
+
+	CancelDefuse();
 
 	BombMesh->SetSimulatePhysics(false);
 	SetActorEnableCollision(true);
+
+	// Unhide the bomb for the new round
+	SetActorHiddenInGame(false);
 
 	// Cancel any pending timer
 	GetWorldTimerManager().ClearTimer(BombTimerHandle);
@@ -167,7 +235,15 @@ void AZeroDawnBomb::ResetBomb()
 void AZeroDawnBomb::Interact_Implementation(AActor* Interactor)
 {
 	// This handles defusing when the bomb is planted
+	// Called on the owning client via line trace; forwards to server RPC
+	ServerStartDefuse(Interactor);
+}
+
+bool AZeroDawnBomb::ServerStartDefuse_Validate(AActor* Interactor) { return true; }
+void AZeroDawnBomb::ServerStartDefuse_Implementation(AActor* Interactor)
+{
+	if (!HasAuthority()) return;
 	if (!bIsPlanted || bIsDefused) return;
 
-	DefuseBomb();
+	StartDefuse(Interactor);
 }

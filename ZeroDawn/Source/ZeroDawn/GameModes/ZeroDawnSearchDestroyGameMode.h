@@ -2,6 +2,8 @@
 #include "ZeroDawnGameModeBase.h"
 #include "ZeroDawnSearchDestroyGameMode.generated.h"
 
+class AZeroDawnBomb;
+
 UCLASS()
 class ZERODAWN_API AZeroDawnSearchDestroyGameMode : public AZeroDawnGameModeBase
 {
@@ -43,6 +45,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "S&D")
 	bool bRoundActive = false;
 
+	/** Reference to the active bomb in the level */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "S&D")
+	AZeroDawnBomb* ActiveBomb = nullptr;
+
 	UFUNCTION(BlueprintCallable, Category = "S&D")
 	void StartNewRound();
 
@@ -70,4 +76,6 @@ protected:
 
 	void CountAlivePlayers();
 
+	/** Find and cache the bomb actor, bind its delegates */
+	void FindAndBindBomb();
 };

@@ -1,9 +1,12 @@
 #pragma once
 #include "../ZeroDawn.h"
+#include "../GameTypes.h"
 #include "ZeroDawnInteractable.h"
 #include "ZeroDawnBomb.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FBombEvent);
+
+class AZeroDawnCharacter;
 
 UCLASS()
 class ZERODAWN_API AZeroDawnBomb : public AActor, public IZeroDawnInteractable
@@ -28,6 +31,14 @@ public:
 
 	UPROPERTY(ReplicatedUsing = OnRep_IsCarried, BlueprintReadOnly, Category = "Bomb")
 	bool bIsCarried = false;
+
+	/** Which team planted the bomb */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Bomb")
+	ETeamType PlantedByTeam = ETeamType::None;
+
+	/** The character currently carrying this bomb */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Bomb")
+	AZeroDawnCharacter* CarriedByCharacter = nullptr;
 
 	UFUNCTION()
 	void OnRep_IsPlanted();
@@ -86,9 +97,13 @@ public:
 	// ------------------------------------------------------------------
 	/** Begin planting the bomb (called when player interacts with bomb site while carrying bomb) */
 	UFUNCTION(BlueprintCallable, Category = "Bomb")
-	void PlantBomb();
+	void PlantBomb(AActor* Planter = nullptr);
 
-	/** Begin defusing the bomb (called when player interacts with planted bomb) */
+	/** Start defuse hold interaction — calls DefuseBomb() after DefuseTime */
+	UFUNCTION(BlueprintCallable, Category = "Bomb")
+	void StartDefuse(AActor* Defuser);
+
+	/** Immediately defuse the bomb */
 	UFUNCTION(BlueprintCallable, Category = "Bomb")
 	void DefuseBomb();
 
@@ -105,12 +120,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Bomb")
 	void ResetBomb();
 
+	/** Cancel any ongoing defuse interaction */
+	void CancelDefuse();
+
 	// ------------------------------------------------------------------
 	// IZeroDawnInteractable
 	// ------------------------------------------------------------------
 	virtual void Interact_Implementation(AActor* Interactor) override;
 
+	/** Server RPC: start defusing (called from Interact_Implementation on client) */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerStartDefuse(AActor* Interactor);
+
 protected:
 	FTimerHandle BombTimerHandle;
+	FTimerHandle DefuseTimerHandle;
 	float BombStartTime = 0.0f;
+
+	/** The actor currently defusing (null if none) */
+	AActor* InteractingDefuser = nullptr;
+
+	/** Internal: complete the defuse after the hold timer */
+	void CompleteDefuse();
 };

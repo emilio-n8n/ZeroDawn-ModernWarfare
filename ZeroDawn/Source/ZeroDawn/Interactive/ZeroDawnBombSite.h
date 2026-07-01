@@ -6,6 +6,8 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBombSiteOverlap, AActor*, OverlappingActor);
 
+class AZeroDawnBomb;
+
 UCLASS()
 class ZERODAWN_API AZeroDawnBombSite : public AActor, public IZeroDawnInteractable
 {
@@ -72,10 +74,29 @@ public:
 	/** Handles plant interaction when player is near the bomb site carrying the bomb */
 	virtual void Interact_Implementation(AActor* Interactor) override;
 
+	/** Server RPC: start planting (called from Interact_Implementation on client) */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerStartPlant(AActor* Interactor);
+
+	/** Cancel any ongoing plant interaction */
+	void CancelPlant();
+
 protected:
 	/** Set of players currently overlapping this trigger zone */
 	TArray<TWeakObjectPtr<AActor>> OverlappingPlayers;
 
 	/** Update team control based on which players are in the zone */
 	void UpdateTeamControl();
+
+	/** Find the bomb carried by the given character, if any */
+	AZeroDawnBomb* GetCarriedBomb(AActor* Character);
+
+	/** Timer handle for plant hold interaction */
+	FTimerHandle PlantTimerHandle;
+
+	/** The bomb being planted (during the hold) */
+	AZeroDawnBomb* PlantingBomb = nullptr;
+
+	/** Complete the plant after the hold timer fires */
+	void CompletePlant();
 };

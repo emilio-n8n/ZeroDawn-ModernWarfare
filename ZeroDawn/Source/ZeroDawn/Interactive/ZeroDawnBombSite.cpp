@@ -1,4 +1,5 @@
 #include "ZeroDawnBombSite.h"
+#include "ZeroDawnBomb.h"
 #include "../Character/ZeroDawnCharacter.h"
 #include "../Multiplayer/ZeroDawnPlayerState.h"
 
@@ -16,6 +17,7 @@ AZeroDawnBombSite::AZeroDawnBombSite()
 	TriggerVolume->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	TriggerVolume->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	TriggerVolume->SetCollisionResponseToChannel(ECC_PhysicsBody, ECollisionResponse::ECR_Overlap);
+	TriggerVolume->SetCollisionResponseToChannel(ECC_Visibility, ECollisionResponse::ECR_Block);
 	TriggerVolume->SetGenerateOverlapEvents(true);
 
 	// Optional visual mesh for the site area
@@ -33,6 +35,7 @@ void AZeroDawnBombSite::BeginPlay()
 	TriggerVolume->OnComponentEndOverlap.AddDynamic(this, &AZeroDawnBombSite::OnOverlapEnd);
 
 	TeamControlling = ETeamType::None;
+	PlantingBomb = nullptr;
 }
 
 void AZeroDawnBombSite::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -109,7 +112,83 @@ void AZeroDawnBombSite::UpdateTeamControl()
 
 void AZeroDawnBombSite::Interact_Implementation(AActor* Interactor)
 {
-	// This will be wired to plant logic in the interaction flow feature
-	// Currently, the game mode or bomb actor handles planting when the player
-	// interacts with the bomb site while carrying the bomb.
+	// Called on the owning client via line trace; forwards to server RPC
+	ServerStartPlant(Interactor);
+}
+
+bool AZeroDawnBombSite::ServerStartPlant_Validate(AActor* Interactor) { return true; }
+void AZeroDawnBombSite::ServerStartPlant_Implementation(AActor* Interactor)
+{
+	if (!HasAuthority()) return;
+
+	// If a plant is already in progress, cancel it (toggle off)
+	if (PlantingBomb)
+	{
+		CancelPlant();
+		return;
+	}
+
+	// Check if the interacting player is carrying a bomb
+	AZeroDawnBomb* CarriedBomb = GetCarriedBomb(Interactor);
+	if (!CarriedBomb) return;
+	if (CarriedBomb->bIsPlanted || CarriedBomb->bIsDefused) return;
+
+	// Start the plant hold timer using the bomb's PlantTime
+	PlantingBomb = CarriedBomb;
+	float PlantDuration = CarriedBomb->PlantTime;
+
+	GetWorldTimerManager().SetTimer(PlantTimerHandle, this, &AZeroDawnBombSite::CompletePlant, PlantDuration, false);
+}
+
+void AZeroDawnBombSite::CancelPlant()
+{
+	if (!HasAuthority()) return;
+
+	GetWorldTimerManager().ClearTimer(PlantTimerHandle);
+	PlantingBomb = nullptr;
+}
+
+void AZeroDawnBombSite::CompletePlant()
+{
+	if (!HasAuthority()) return;
+
+	if (PlantingBomb)
+	{
+		// Verify the planter is still near the site
+		bool bPlanterNearby = false;
+		AActor* Planter = PlantingBomb->CarriedByCharacter;
+		if (Planter)
+		{
+			for (const TWeakObjectPtr<AActor>& Player : OverlappingPlayers)
+			{
+				if (Player.IsValid() && Player.Get() == Planter)
+				{
+					bPlanterNearby = true;
+					break;
+				}
+			}
+		}
+
+		if (bPlanterNearby)
+		{
+			bHasPlantedBomb = true;
+			PlantingBomb->PlantBomb(Planter);
+		}
+	}
+
+	PlantingBomb = nullptr;
+}
+
+AZeroDawnBomb* AZeroDawnBombSite::GetCarriedBomb(AActor* Character)
+{
+	// Find the bomb being carried by this character
+	for (TActorIterator<AZeroDawnBomb> It(GetWorld()); It; ++It)
+	{
+		AZeroDawnBomb* Bomb = *It;
+		if (Bomb && Bomb->bIsCarried && Bomb->CarriedByCharacter == Character)
+		{
+			return Bomb;
+		}
+	}
+	return nullptr;
 }

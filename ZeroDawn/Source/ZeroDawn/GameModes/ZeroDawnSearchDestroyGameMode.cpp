@@ -2,6 +2,7 @@
 #include "../Multiplayer/ZeroDawnGameState.h"
 #include "../Multiplayer/ZeroDawnPlayerState.h"
 #include "../Character/ZeroDawnCharacter.h"
+#include "../Interactive/ZeroDawnBomb.h"
 
 AZeroDawnSearchDestroyGameMode::AZeroDawnSearchDestroyGameMode()
 {
@@ -15,6 +16,9 @@ AZeroDawnSearchDestroyGameMode::AZeroDawnSearchDestroyGameMode()
 void AZeroDawnSearchDestroyGameMode::BeginPlay()
 {
 	AZeroDawnGameModeBase::BeginPlay();
+
+	// Find and bind the bomb actor's delegates
+	FindAndBindBomb();
 }
 
 void AZeroDawnSearchDestroyGameMode::Tick(float DeltaSeconds)
@@ -35,14 +39,8 @@ void AZeroDawnSearchDestroyGameMode::Tick(float DeltaSeconds)
 			EndRound(ETeamType::None);
 	}
 
-	if (bBombPlanted)
-	{
-		float BombElapsed = GetWorld()->GetTimeSeconds() - BombPlantTime;
-		if (BombElapsed >= BombTimer)
-		{
-			OnBombExploded();
-		}
-	}
+	// Note: bomb timer is handled by the bomb actor's Tick() and its OnExploded delegate
+	// The game mode receives the result via OnBombExploded() bound to the bomb's delegate.
 }
 
 void AZeroDawnSearchDestroyGameMode::PostLogin(APlayerController* NewPlayer)
@@ -79,6 +77,12 @@ void AZeroDawnSearchDestroyGameMode::StartNewRound()
 	BombPlantTime = 0.0f;
 	RoundStartTime = GetWorld()->GetTimeSeconds();
 	CurrentRound++;
+
+	// Reset the bomb for the new round
+	if (ActiveBomb)
+	{
+		ActiveBomb->ResetBomb();
+	}
 
 	if (!bSwitchedSides && CurrentRound > RoundsToWin)
 	{
@@ -174,4 +178,26 @@ void AZeroDawnSearchDestroyGameMode::CountAlivePlayers()
 				BravoAlive++;
 		}
 	}
+}
+
+void AZeroDawnSearchDestroyGameMode::FindAndBindBomb()
+{
+	for (TActorIterator<AZeroDawnBomb> It(GetWorld()); It; ++It)
+	{
+		ActiveBomb = *It;
+		break; // Only one bomb in S&D
+	}
+
+	if (!ActiveBomb)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("S&D: No AZeroDawnBomb found in the level!"));
+		return;
+	}
+
+	// Bind bomb delegates to game mode handlers
+	ActiveBomb->OnBombPlantedDelegate.AddDynamic(this, &AZeroDawnSearchDestroyGameMode::OnBombPlanted);
+	ActiveBomb->OnBombDefusedDelegate.AddDynamic(this, &AZeroDawnSearchDestroyGameMode::OnBombDefused);
+	ActiveBomb->OnBombExplodedDelegate.AddDynamic(this, &AZeroDawnSearchDestroyGameMode::OnBombExploded);
+
+	UE_LOG(LogTemp, Log, TEXT("S&D: Bomb actor bound to game mode delegates."));
 }
