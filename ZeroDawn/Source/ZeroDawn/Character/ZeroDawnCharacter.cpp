@@ -633,6 +633,10 @@ bool AZeroDawnCharacter::ServerSetSliding_Validate(bool bNewSliding) { return tr
 void AZeroDawnCharacter::ServerSetSliding_Implementation(bool bNewSliding)
 {
 	bIsSliding = bNewSliding;
+	if (bNewSliding)
+	{
+		SlideStartTime = GetWorld()->GetTimeSeconds();
+	}
 }
 
 bool AZeroDawnCharacter::ServerFire_Validate() { return true; }
