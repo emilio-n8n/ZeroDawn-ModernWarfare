@@ -1,4 +1,5 @@
 #include "ZeroDawnLevelGenerator.h"
+#include "../Interactive/ZeroDawnBombSite.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -141,4 +142,83 @@ void AZeroDawnLevelGenerator::GenerateDominationMap()
 	SpawnBuilding(FVector(-300, 0, 25), FVector(60, 60, 50), FColor(0, 200, 255));
 	SpawnBuilding(FVector(300, 0, 25), FVector(60, 60, 50), FColor(255, 200, 0));
 	SpawnBuilding(FVector(0, 500, 25), FVector(60, 60, 50), FColor(0, 255, 50));
+}
+
+void AZeroDawnLevelGenerator::GenerateSDMap()
+{
+	// Ground plane - larger map for S&D
+	SpawnBuilding(FVector(0, 0, -50), FVector(6000, 5000, 100), FColor(55, 55, 55));
+
+	// Boundary walls
+	SpawnBuilding(FVector(3000, 0, 300), FVector(100, 5000, 600), FColor(90, 90, 90));
+	SpawnBuilding(FVector(-3000, 0, 300), FVector(100, 5000, 600), FColor(90, 90, 90));
+	SpawnBuilding(FVector(0, 2500, 300), FVector(6000, 100, 600), FColor(90, 90, 90));
+	SpawnBuilding(FVector(0, -2500, 300), FVector(6000, 100, 600), FColor(90, 90, 90));
+
+	// ---- Alpha Base (West side) ----
+	SpawnBuilding(FVector(-2200, 0, 200), FVector(600, 800, 400), FColor(160, 140, 100));
+	SpawnBuilding(FVector(-2200, 0, 50), FVector(700, 900, 100), FColor(100, 120, 140));
+
+	// Alpha spawn platform marker (blue)
+	SpawnBuilding(FVector(-2700, 1500, 0), FVector(150, 150, 10), FColor(0, 100, 255));
+	SpawnBuilding(FVector(-2700, -1500, 0), FVector(150, 150, 10), FColor(0, 100, 255));
+
+	// ---- Bravo Base (East side) ----
+	SpawnBuilding(FVector(2200, 0, 200), FVector(600, 800, 400), FColor(140, 100, 100));
+	SpawnBuilding(FVector(2200, 0, 50), FVector(700, 900, 100), FColor(140, 120, 100));
+
+	// Bravo spawn platform marker (red)
+	SpawnBuilding(FVector(2700, 1500, 0), FVector(150, 150, 10), FColor(255, 0, 0));
+	SpawnBuilding(FVector(2700, -1500, 0), FVector(150, 150, 10), FColor(255, 0, 0));
+
+	// ---- Center structures ----
+	SpawnBuilding(FVector(0, 0, 120), FVector(400, 400, 240), FColor(180, 80, 80));
+
+	// Mid-map cover / ruins
+	SpawnBuilding(FVector(0, -900, 80), FVector(500, 100, 160), FColor(130, 130, 110));
+	SpawnBuilding(FVector(0, 900, 80), FVector(500, 100, 160), FColor(130, 130, 110));
+
+	// ---- Scattered cover ----
+	SpawnCover(FVector(-1200, -600, 100), 100, 2.0f, FRotator::ZeroRotator);
+	SpawnCover(FVector(-1200, 600, 100), 100, 2.0f, FRotator::ZeroRotator);
+	SpawnCover(FVector(1200, -600, 100), 100, 2.0f, FRotator::ZeroRotator);
+	SpawnCover(FVector(1200, 600, 100), 100, 2.0f, FRotator::ZeroRotator);
+
+	SpawnBarrier(FVector(-500, -1400, 100), 100);
+	SpawnBarrier(FVector(-500, 1400, 100), 100);
+	SpawnBarrier(FVector(500, -1400, 100), 100);
+	SpawnBarrier(FVector(500, 1400, 100), 100);
+
+	SpawnCover(FVector(-1800, -200, 80), 80, 1.5f, FRotator(0, 45, 0));
+	SpawnCover(FVector(-1800, 200, 80), 80, 1.5f, FRotator(0, -45, 0));
+	SpawnCover(FVector(1800, -200, 80), 80, 1.5f, FRotator(0, -45, 0));
+	SpawnCover(FVector(1800, 200, 80), 80, 1.5f, FRotator(0, 45, 0));
+
+	// ---- Bomb Sites ----
+	// Spawn Bomb Site A near the west side (Alpha territory)
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AZeroDawnBombSite* SiteA = GetWorld()->SpawnActor<AZeroDawnBombSite>(
+		FVector(-1500, 800, 50), FRotator::ZeroRotator, SpawnParams);
+	if (SiteA)
+	{
+		SiteA->SiteName = FName(TEXT("A"));
+		SpawnedActors.Add(SiteA);
+
+		// Visual marker for bomb site A (blue ring platform)
+		SpawnBuilding(FVector(-1500, 800, 20), FVector(140, 140, 20), FColor(0, 100, 255));
+	}
+
+	// Spawn Bomb Site B near the east side (Bravo territory)
+	AZeroDawnBombSite* SiteB = GetWorld()->SpawnActor<AZeroDawnBombSite>(
+		FVector(1500, -800, 50), FRotator::ZeroRotator, SpawnParams);
+	if (SiteB)
+	{
+		SiteB->SiteName = FName(TEXT("B"));
+		SpawnedActors.Add(SiteB);
+
+		// Visual marker for bomb site B (red ring platform)
+		SpawnBuilding(FVector(1500, -800, 20), FVector(140, 140, 20), FColor(255, 50, 50));
+	}
 }

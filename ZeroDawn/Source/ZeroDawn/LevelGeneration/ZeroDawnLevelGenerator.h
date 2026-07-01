@@ -2,6 +2,8 @@
 #include "../ZeroDawn.h"
 #include "ZeroDawnLevelGenerator.generated.h"
 
+class AZeroDawnBombSite;
+
 UCLASS(Blueprintable)
 class AZeroDawnLevelGenerator : public AActor
 {
@@ -20,6 +22,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "LevelGen")
 	void GenerateDominationMap();
+
+	/** Generate a Search & Destroy map with bomb sites and team spawn points */
+	UFUNCTION(BlueprintCallable, Category = "LevelGen")
+	void GenerateSDMap();
 
 	UFUNCTION(BlueprintCallable, Category = "LevelGen")
 	void SpawnBuilding(FVector Location, FVector Extent, FColor Color);
