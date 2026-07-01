@@ -419,6 +419,17 @@ void AZeroDawnCharacter::MulticastPlayDeathEffect_Implementation()
 void AZeroDawnCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+
+	// Apply perks from the player's current loadout to this character instance.
+	// This runs on the server where authority over gameplay-affecting properties is needed.
+	if (PerkSystem)
+	{
+		AZeroDawnPlayerState* PS = GetPlayerState<AZeroDawnPlayerState>();
+		if (PS)
+		{
+			PerkSystem->ApplyPerks(PS->CurrentLoadout);
+		}
+	}
 }
 
 void AZeroDawnCharacter::OnRep_PlayerState()
