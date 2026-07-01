@@ -76,4 +76,14 @@ public:
 
 protected:
 	virtual void SetupWidgets();
+
+	/** Current crosshair spread value for dynamic crosshair drawing */
+	float CrosshairSpread = 0.0f;
+
+	/** Timer handles for auto-removing kill feed entries */
+	UPROPERTY()
+	TArray<FTimerHandle> KillFeedTimerHandles;
+
+	/** Get display name for a weapon type */
+	FString GetWeaponDisplayName(EWeaponType Weapon) const;
 };
