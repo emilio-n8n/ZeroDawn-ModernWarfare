@@ -1,5 +1,6 @@
 #include "ZeroDawnDominationGameMode.h"
 #include "../Multiplayer/ZeroDawnGameState.h"
+#include "../Multiplayer/ZeroDawnPlayerState.h"
 #include "DominationZone.h"
 
 AZeroDawnDominationGameMode::AZeroDawnDominationGameMode()
@@ -54,4 +55,27 @@ void AZeroDawnDominationGameMode::CheckMatchEndConditions()
 	{
 		EndCurrentMatch();
 	}
+}
+
+void AZeroDawnDominationGameMode::HandleMatchHasEnded()
+{
+	// Determine winner by comparing team scores before match ends
+	AZeroDawnGameState* ZDGS = GetZDGameState();
+	if (ZDGS)
+	{
+		if (ZDGS->TeamAlphaScore > ZDGS->TeamBravoScore)
+		{
+			ZDGS->WinningTeam = ETeamType::Alpha;
+		}
+		else if (ZDGS->TeamBravoScore > ZDGS->TeamAlphaScore)
+		{
+			ZDGS->WinningTeam = ETeamType::Bravo;
+		}
+		else
+		{
+			ZDGS->WinningTeam = ETeamType::None;
+		}
+	}
+
+	Super::HandleMatchHasEnded();
 }

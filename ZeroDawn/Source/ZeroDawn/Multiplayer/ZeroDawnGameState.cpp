@@ -29,6 +29,7 @@ void AZeroDawnGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(AZeroDawnGameState, TeamBravoScore);
 	DOREPLIFETIME(AZeroDawnGameState, PlayerScoreboard);
 	DOREPLIFETIME(AZeroDawnGameState, RemainingPreMatchTime);
+	DOREPLIFETIME(AZeroDawnGameState, WinningTeam);
 }
 
 void AZeroDawnGameState::Tick(float DeltaSeconds)

@@ -15,6 +15,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void CheckMatchEndConditions() override;
+	virtual void HandleMatchHasEnded() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Hardpoint")
 	int32 HardpointScoreLimit = 250;

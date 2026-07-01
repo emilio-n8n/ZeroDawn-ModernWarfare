@@ -45,6 +45,9 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Match")
 	float RemainingPreMatchTime = 10.0f;
 
+	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Match")
+	ETeamType WinningTeam = ETeamType::None;
+
 	UFUNCTION(BlueprintCallable, Category = "Match")
 	void AddTeamScore(ETeamType Team, int32 Amount);
 

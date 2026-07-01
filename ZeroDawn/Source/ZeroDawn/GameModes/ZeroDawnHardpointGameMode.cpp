@@ -50,6 +50,12 @@ void AZeroDawnHardpointGameMode::Tick(float DeltaSeconds)
 			{
 				ActivateNextHardpoint();
 			}
+			else
+			{
+				// All hardpoints exhausted — loop back to index 0
+				CurrentHardpointIndex = 0;
+				ActivateNextHardpoint();
+			}
 			HardpointActiveTime = 0.0f;
 			return;
 		}
@@ -76,6 +82,29 @@ void AZeroDawnHardpointGameMode::CheckMatchEndConditions()
 	{
 		EndCurrentMatch();
 	}
+}
+
+void AZeroDawnHardpointGameMode::HandleMatchHasEnded()
+{
+	// Determine winner by comparing team scores before match ends
+	AZeroDawnGameState* ZDGS = GetZDGameState();
+	if (ZDGS)
+	{
+		if (ZDGS->TeamAlphaScore > ZDGS->TeamBravoScore)
+		{
+			ZDGS->WinningTeam = ETeamType::Alpha;
+		}
+		else if (ZDGS->TeamBravoScore > ZDGS->TeamAlphaScore)
+		{
+			ZDGS->WinningTeam = ETeamType::Bravo;
+		}
+		else
+		{
+			ZDGS->WinningTeam = ETeamType::None;
+		}
+	}
+
+	Super::HandleMatchHasEnded();
 }
 
 void AZeroDawnHardpointGameMode::ActivateNextHardpoint()
