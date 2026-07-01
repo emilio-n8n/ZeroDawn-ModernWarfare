@@ -8,7 +8,8 @@ AZeroDawnSearchDestroyGameMode::AZeroDawnSearchDestroyGameMode()
 	GameModeType = EGameModeType::SearchAndDestroy;
 	bUseSeamlessTravel = true;
 	ScoreLimit = RoundsToWin;
-	MatchTimeLimit = 120.0f;
+	// MatchTimeLimit stays at 600.0f from base class (overall match timeout).
+	// RoundTimeLimit (120.0f) is used per-round instead.
 }
 
 void AZeroDawnSearchDestroyGameMode::BeginPlay()
@@ -23,7 +24,7 @@ void AZeroDawnSearchDestroyGameMode::Tick(float DeltaSeconds)
 	if (!bRoundActive) return;
 
 	float RoundTime = GetWorld()->GetTimeSeconds() - RoundStartTime;
-	if (RoundTime >= MatchTimeLimit && !bBombPlanted)
+	if (RoundTime >= RoundTimeLimit && !bBombPlanted)
 	{
 		CountAlivePlayers();
 		if (AlphaAlive > BravoAlive)
@@ -36,7 +37,7 @@ void AZeroDawnSearchDestroyGameMode::Tick(float DeltaSeconds)
 
 	if (bBombPlanted)
 	{
-		float BombElapsed = GetWorld()->GetTimeSeconds() - RoundStartTime;
+		float BombElapsed = GetWorld()->GetTimeSeconds() - BombPlantTime;
 		if (BombElapsed >= BombTimer)
 		{
 			OnBombExploded();
@@ -46,7 +47,7 @@ void AZeroDawnSearchDestroyGameMode::Tick(float DeltaSeconds)
 
 void AZeroDawnSearchDestroyGameMode::PostLogin(APlayerController* NewPlayer)
 {
-	Super::Super::PostLogin(NewPlayer);
+	Super::PostLogin(NewPlayer);
 }
 
 void AZeroDawnSearchDestroyGameMode::OnPlayerKilled(AController* Killer, AController* Victim)
@@ -75,12 +76,26 @@ void AZeroDawnSearchDestroyGameMode::StartNewRound()
 {
 	bRoundActive = true;
 	bBombPlanted = false;
+	BombPlantTime = 0.0f;
 	RoundStartTime = GetWorld()->GetTimeSeconds();
 	CurrentRound++;
 
 	if (!bSwitchedSides && CurrentRound > RoundsToWin)
 	{
 		bSwitchedSides = true;
+
+		// Swap teams: Alpha <-> Bravo for all players
+		for (APlayerState* PS : GameState->PlayerArray)
+		{
+			AZeroDawnPlayerState* ZDPS = Cast<AZeroDawnPlayerState>(PS);
+			if (ZDPS)
+			{
+				if (ZDPS->PlayerTeam == ETeamType::Alpha)
+					ZDPS->PlayerTeam = ETeamType::Bravo;
+				else if (ZDPS->PlayerTeam == ETeamType::Bravo)
+					ZDPS->PlayerTeam = ETeamType::Alpha;
+			}
+		}
 	}
 
 	// Respawn all players
@@ -124,6 +139,7 @@ void AZeroDawnSearchDestroyGameMode::EndRound(ETeamType WinningTeam)
 void AZeroDawnSearchDestroyGameMode::OnBombPlanted()
 {
 	bBombPlanted = true;
+	BombPlantTime = GetWorld()->GetTimeSeconds();
 }
 
 void AZeroDawnSearchDestroyGameMode::OnBombDefused()

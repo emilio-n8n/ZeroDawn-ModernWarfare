@@ -59,8 +59,12 @@ public:
 	void OnBombExploded();
 
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "S&D")
+	float RoundTimeLimit = 120.0f;
+
 	bool bSwitchedSides = false;
 	float RoundStartTime = 0.0f;
+	float BombPlantTime = 0.0f;
 	int32 AlphaAlive = 0;
 	int32 BravoAlive = 0;
 
