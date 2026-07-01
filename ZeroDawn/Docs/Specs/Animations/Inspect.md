@@ -1,0 +1,16 @@
+# Animation: Inspect
+
+## Description
+- Context: Player inspects their weapon by pressing the inspect input. Shows off the weapon model visually — rotating it to examine details, check magazine, or admire the finish. A cosmetic animation with no gameplay effect.
+- Style: Casual but professional — the soldier briefly takes their eyes off the surroundings to check their weapon. Movement is smooth, deliberate, and focused on the weapon. The animation conveys the character's familiarity and care for their equipment.
+- Duration: 1.2 seconds (InspectDuration in code). Can be interrupted by firing, sprinting, or other combat actions.
+- Key poses:
+  1. **Start (Break Ready)**: Weapon lowered from firing position by ~20 degrees. Support hand loosens grip slightly. The character's head tilts down ~10 degrees to look at the weapon. This pose transitions from the current state (idle/walk) over ~0.1s.
+  2. **Rotate to View**: Weapon rotated ~45 degrees to the right (for right-handed shooter) so the right side of the receiver is visible. Support hand slides along the handguard toward the muzzle, then the wrist rotates to turn the weapon. The trigger hand tilts the pistol grip to present the weapon for viewing. Head follows the weapon rotation. Weapon reaches max rotation at ~0.4s.
+  3. **Magazine Check**: At peak rotation (~0.5-0.6s), the support hand may briefly tap or check the magazine seating or the bolt is pulled back slightly to check the chamber (depending on weapon type). For AR-style weapons: a slight tug on the magazine to confirm it's seated. For AK: a glance at the gas tube and furniture. For pistol: slide locked back slightly to check chamber. For shotgun: a quick glance at the shell in the chamber/elevator.
+  4. **Return to Ready**: Weapon rotated back to firing position over ~0.4s. Support hand slides back to foregrip position. Head raises back to forward-facing. Both hands return to firing grip. Weapon fully returned by ~1.2s.
+- Weapon handling: The weapon is never pointed at the user (safety rule). Barrel stays generally down-range or angled ~30-45 degrees off-center. The inspection motion is supported primarily by the trigger hand while the support hand manipulates different parts of the weapon. Magazine is never fully removed — only checked for seating.
+- InspectDuration in code: 1.2 seconds (UZeroDawnWeaponInspect). The TickComponent handles the camera rotation and FOV zoom math.
+- Camera behavior (first-person): Camera FOV zooms slightly from default to InspectFOVZoom (45.0). Camera rotates with InspectYawAngle (45 degrees) and InspectPitchAngle (10 degrees). The weapon mesh remains in the same world position while the camera moves around it.
+- Montage: Played via PlayInspectMontage() in UZeroDawnWeaponInspect. The animation should be a non-looping UAnimMontage that lasts exactly InspectDuration seconds (1.2s).
+- Additional notes: The inspect animation is weapon-type specific — each weapon category may have a unique inspect sequence to show off its distinctive features (e.g., pump shotgun: checking the action; sniper rifle: checking the scope magnification). InspectMoveSpeed (0.5f) controls the camera rotation speed multiplier. The animation is first-person only (arms + weapon visible). For third-person, a simplified upper-body inspect may be used or skipped.
