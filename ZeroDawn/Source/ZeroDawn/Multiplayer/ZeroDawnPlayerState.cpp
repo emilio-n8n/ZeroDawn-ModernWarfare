@@ -54,6 +54,7 @@ void AZeroDawnPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(AZeroDawnPlayerState, CurrentLoadout);
 	DOREPLIFETIME(AZeroDawnPlayerState, CareerWins);
 	DOREPLIFETIME(AZeroDawnPlayerState, CareerLosses);
+	DOREPLIFETIME(AZeroDawnPlayerState, WeaponUsageMap);
 }
 
 void AZeroDawnPlayerState::CopyProperties(APlayerState* PlayerState)
@@ -71,6 +72,7 @@ void AZeroDawnPlayerState::CopyProperties(APlayerState* PlayerState)
 		ZDPS->PlayerXP = PlayerXP;
 		ZDPS->CareerWins = CareerWins;
 		ZDPS->CareerLosses = CareerLosses;
+		ZDPS->WeaponUsageMap = WeaponUsageMap;
 	}
 }
 
@@ -83,8 +85,8 @@ void AZeroDawnPlayerState::Reset()
 	TotalScore = 0;
 	CurrentKillstreak = 0;
 	HighestKillstreak = 0;
-	// Note: PlayerLevel, PlayerXP, CareerWins, CareerLosses are NOT reset here -
-	// they persist across matches within a session.
+	// Note: PlayerLevel, PlayerXP, CareerWins, CareerLosses, WeaponUsageMap 
+	// are NOT reset here - they persist across matches within a session.
 }
 
 void AZeroDawnPlayerState::AddKill()
@@ -286,6 +288,7 @@ void AZeroDawnPlayerState::LoadSavedProgress()
 	PlayerXP = SaveData->PlayerXP;
 	CareerWins = SaveData->CareerWins;
 	CareerLosses = SaveData->CareerLosses;
+	WeaponUsageMap = SaveData->WeaponUsageMap;
 
 	// Restore loadouts onto the character's CreateAClass component
 	if (AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(GetPawn()))

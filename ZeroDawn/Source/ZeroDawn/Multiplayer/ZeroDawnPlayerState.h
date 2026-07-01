@@ -131,6 +131,6 @@ public:
 	void RecordWeaponKill(EWeaponType WeaponType);
 
 	/** Map of weapon type → kill count for most-used weapon tracking */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGame")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "SaveGame")
 	TMap<EWeaponType, int32> WeaponUsageMap;
 };

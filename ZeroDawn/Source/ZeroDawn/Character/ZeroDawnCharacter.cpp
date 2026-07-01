@@ -109,6 +109,16 @@ void AZeroDawnCharacter::BeginPlay()
 	{
 		SetTeam(TeamType);
 	}
+
+	// Load saved progress on client when pawn is ready (restores loadouts, settings)
+	if (!HasAuthority())
+	{
+		AZeroDawnPlayerState* PS = GetPlayerState<AZeroDawnPlayerState>();
+		if (PS)
+		{
+			PS->LoadSavedProgress();
+		}
+	}
 }
 
 void AZeroDawnCharacter::Tick(float DeltaTime)
@@ -121,6 +131,17 @@ void AZeroDawnCharacter::Tick(float DeltaTime)
 		if (SlideElapsed >= SlideDuration)
 		{
 			StopCrouch();
+		}
+	}
+
+	// Health regeneration (affected by QuickFix perk)
+	if (HasAuthority() && IsAlive() && CurrentHealth < MaxHealth)
+	{
+		float TimeSinceDamage = GetWorld()->GetTimeSeconds() - LastDamageTime;
+		if (TimeSinceDamage >= HealthRegenDelay)
+		{
+			float RegenAmount = HealthRegenRate * DeltaTime;
+			CurrentHealth = FMath::Clamp(CurrentHealth + RegenAmount, 0.0f, MaxHealth);
 		}
 	}
 }
@@ -298,6 +319,20 @@ void AZeroDawnCharacter::AddKill()
 	Kills++;
 	CurrentKillstreak++;
 	Score += 100;
+
+	// Track weapon usage for this kill
+	if (WeaponComponent)
+	{
+		AZeroDawnWeapon* CurrentWeapon = WeaponComponent->GetCurrentWeapon();
+		if (CurrentWeapon)
+		{
+			AZeroDawnPlayerState* PS = GetPlayerState<AZeroDawnPlayerState>();
+			if (PS)
+			{
+				PS->RecordWeaponKill(CurrentWeapon->WeaponStats.WeaponType);
+			}
+		}
+	}
 
 	if (KillstreakManager)
 	{
