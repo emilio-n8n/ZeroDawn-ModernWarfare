@@ -5,6 +5,7 @@
 #include "../Character/ZeroDawnCharacter.h"
 #include "../WeaponSystem/ZeroDawnWeaponComponent.h"
 #include "../Weapon/ZeroDawnWeapon.h"
+#include "../UI/ZeroDawnHUD.h"
 #include "Engine/PlayerStartPIE.h"
 
 AZeroDawnGameModeBase::AZeroDawnGameModeBase()
@@ -87,6 +88,13 @@ void AZeroDawnGameModeBase::Logout(AController* Exiting)
 void AZeroDawnGameModeBase::RestartPlayer(AController* NewPlayer)
 {
 	if (!NewPlayer) return;
+
+	// If the player controller is in spectator mode, exit it before respawning
+	AZeroDawnPlayerController* ZDPC = Cast<AZeroDawnPlayerController>(NewPlayer);
+	if (ZDPC && ZDPC->bIsSpectating)
+	{
+		ZDPC->ExitSpectatorMode();
+	}
 
 	AZeroDawnCharacter* ExistingPawn = Cast<AZeroDawnCharacter>(NewPlayer->GetPawn());
 	if (ExistingPawn)

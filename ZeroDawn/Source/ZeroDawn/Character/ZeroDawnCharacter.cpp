@@ -10,6 +10,7 @@
 #include "../Multiplayer/ZeroDawnPlayerState.h"
 #include "../Multiplayer/ZeroDawnPlayerController.h"
 #include "../Multiplayer/ZeroDawnKillcamManager.h"
+#include "../GameModes/ZeroDawnGameModeBase.h"
 #include "../UI/ZeroDawnHUD.h"
 #include "../UI/ZeroDawnHitmarker.h"
 #include "../Interactive/ZeroDawnInteractable.h"
@@ -92,6 +93,12 @@ AZeroDawnCharacter::AZeroDawnCharacter(const FObjectInitializer& ObjectInitializ
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Inspect(TEXT("/Game/ZeroDawn/Input/Actions/IA_Inspect.IA_Inspect"));
 	if (IA_Inspect.Succeeded()) InspectAction = IA_Inspect.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_CycleNext(TEXT("/Game/ZeroDawn/Input/Actions/IA_CycleNextSpectator.IA_CycleNextSpectator"));
+	if (IA_CycleNext.Succeeded()) CycleNextSpectatorAction = IA_CycleNext.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_CyclePrev(TEXT("/Game/ZeroDawn/Input/Actions/IA_CyclePrevSpectator.IA_CyclePrevSpectator"));
+	if (IA_CyclePrev.Succeeded()) CyclePrevSpectatorAction = IA_CyclePrev.Object;
 }
 
 void AZeroDawnCharacter::BeginPlay()
@@ -252,9 +259,23 @@ void AZeroDawnCharacter::Die()
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
 
-	// Server-side respawn timer fallback. The killcam may trigger respawn earlier
-	// (at ~3 seconds), which will destroy this pawn and cancel this pending timer.
-	GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &AZeroDawnCharacter::RequestRespawn, RespawnDelay, false);
+	// Check if we are in Search & Destroy mode — dead players spectate until
+	// the round ends, so we skip the auto-respawn timer. In other modes, set
+	// a server-side respawn timer fallback. The killcam may trigger respawn
+	// earlier (~3 seconds), destroying this pawn and cancelling this timer.
+	bool bIsSAndD = false;
+	if (HasAuthority())
+	{
+		if (AZeroDawnGameModeBase* GM = Cast<AZeroDawnGameModeBase>(GetWorld()->GetAuthGameMode()))
+		{
+			bIsSAndD = (GM->GameModeType == EGameModeType::SearchAndDestroy);
+		}
+	}
+
+	if (!bIsSAndD)
+	{
+		GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &AZeroDawnCharacter::RequestRespawn, RespawnDelay, false);
+	}
 }
 
 void AZeroDawnCharacter::MulticastOnDeath_Implementation()
@@ -448,6 +469,26 @@ void AZeroDawnCharacter::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 }
 
+void AZeroDawnCharacter::CycleNextSpectator()
+{
+	// Only works when dead and spectating (S&D mode)
+	AZeroDawnPlayerController* ZDPC = Cast<AZeroDawnPlayerController>(GetController());
+	if (ZDPC && ZDPC->bIsSpectating)
+	{
+		ZDPC->CycleNextTeammate();
+	}
+}
+
+void AZeroDawnCharacter::CyclePrevSpectator()
+{
+	// Only works when dead and spectating (S&D mode)
+	AZeroDawnPlayerController* ZDPC = Cast<AZeroDawnPlayerController>(GetController());
+	if (ZDPC && ZDPC->bIsSpectating)
+	{
+		ZDPC->CyclePrevTeammate();
+	}
+}
+
 void AZeroDawnCharacter::CacheInputActions()
 {
 	APlayerController* PC = Cast<APlayerController>(GetController());
@@ -498,6 +539,10 @@ void AZeroDawnCharacter::SetupInputs()
 	if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::Interact);
 	if (MeleeAction) EnhancedInputComponent->BindAction(MeleeAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::Melee);
 	if (InspectAction) EnhancedInputComponent->BindAction(InspectAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::InspectWeapon);
+
+	// Spectator cycling bindings (work even when dead in S&D spectator mode)
+	if (CycleNextSpectatorAction) EnhancedInputComponent->BindAction(CycleNextSpectatorAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::CycleNextSpectator);
+	if (CyclePrevSpectatorAction) EnhancedInputComponent->BindAction(CyclePrevSpectatorAction, ETriggerEvent::Started, this, &AZeroDawnCharacter::CyclePrevSpectator);
 }
 
 void AZeroDawnCharacter::Move(const FInputActionValue& Value)

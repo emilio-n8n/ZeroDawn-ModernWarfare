@@ -296,4 +296,11 @@ protected:
 	class UInputAction* InspectAction;
 
 	void CacheInputActions();
+
+	// Spectator cycling (work even when dead in S&D)
+	void CycleNextSpectator();
+	void CyclePrevSpectator();
+
+	class UInputAction* CycleNextSpectatorAction;
+	class UInputAction* CyclePrevSpectatorAction;
 };

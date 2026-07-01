@@ -1,6 +1,8 @@
 #include "ZeroDawnKillcamManager.h"
 #include "../Character/ZeroDawnCharacter.h"
 #include "../UI/ZeroDawnHUD.h"
+#include "../GameModes/ZeroDawnGameModeBase.h"
+#include "../Multiplayer/ZeroDawnPlayerController.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 
@@ -50,6 +52,42 @@ void UZeroDawnKillcamManager::EndKillcam()
 	{
 		return;
 	}
+
+	// Check if we are in Search & Destroy mode — if so, transition to spectator
+	// mode instead of respawning. In S&D, dead players spectate until the round ends.
+	bool bIsSAndD = false;
+	if (UWorld* World = GetWorld())
+	{
+		if (AZeroDawnGameModeBase* GM = Cast<AZeroDawnGameModeBase>(World->GetAuthGameMode()))
+		{
+			bIsSAndD = (GM->GameModeType == EGameModeType::SearchAndDestroy);
+		}
+	}
+
+	if (bIsSAndD)
+	{
+		// In S&D: enter spectator mode on the PlayerController
+		AZeroDawnPlayerController* ZDPC = Cast<AZeroDawnPlayerController>(PC);
+		if (ZDPC)
+		{
+			// Set view to the dead pawn briefly before transitioning to spectator
+			APawn* DeadPawn = DeadPawnPtr.Get();
+			if (DeadPawn && IsValid(DeadPawn))
+			{
+				PC->SetViewTargetWithBlend(DeadPawn, ViewBlendTime, VTBlend_Cubic, 0.0f, false);
+			}
+
+			// Re-enable look input for spectator mode (movement stays disabled)
+			PC->SetIgnoreLookInput(false);
+			PC->SetIgnoreMoveInput(true);
+
+			// Enter spectator mode — this will find alive teammates and set view to them
+			ZDPC->EnterSpectatorMode();
+		}
+		return;
+	}
+
+	// Non-S&D: normal killcam end — restore view, re-enable input, trigger respawn
 
 	// Restore the view target to the dead pawn (or a safe fallback)
 	APawn* DeadPawn = DeadPawnPtr.Get();
