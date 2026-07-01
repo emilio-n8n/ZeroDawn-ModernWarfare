@@ -25,6 +25,37 @@ UZeroDawnWeaponComponent* UZeroDawnWeaponInventory::GetWeaponComponent() const
 	return GetOwner()->FindComponentByClass<UZeroDawnWeaponComponent>();
 }
 
+AZeroDawnCharacter* UZeroDawnWeaponInventory::GetOwnerCharacter() const
+{
+	return Cast<AZeroDawnCharacter>(GetOwner());
+}
+
+bool UZeroDawnWeaponInventory::IsWeaponAllowedInSlot(EWeaponType WeaponType, int32 SlotIndex) const
+{
+	// Slot 0 (primary): any weapon type is allowed
+	if (SlotIndex == 0)
+	{
+		return true;
+	}
+
+	// Slot 1 (secondary): restricted without Overkill
+	if (SlotIndex == 1)
+	{
+		AZeroDawnCharacter* OwnerChar = GetOwnerCharacter();
+		if (OwnerChar && OwnerChar->bOverkill)
+		{
+			// Overkill perk active: allow any weapon type in secondary slot
+			return true;
+		}
+
+		// Without Overkill, only Pistol and SMG are allowed in secondary slot
+		return (WeaponType == EWeaponType::Pistol || WeaponType == EWeaponType::SMG);
+	}
+
+	// Any other slot index is unrestricted
+	return true;
+}
+
 void UZeroDawnWeaponInventory::SwitchWeapon()
 {
 	int32 CurrentIndex = 0;
@@ -53,6 +84,23 @@ void UZeroDawnWeaponInventory::SelectWeapon(int32 SlotIndex)
 void UZeroDawnWeaponInventory::PickupWeapon(AZeroDawnWeapon* Weapon)
 {
 	if (!Weapon || !GetOwner() || !GetOwner()->HasAuthority()) return;
+
+	// Determine which slot this weapon would occupy
+	int32 NewSlotIndex = InventorySlots.Num();
+	if (NewSlotIndex >= MaxWeaponSlots)
+	{
+		// Inventory is full — we will drop the current weapon first, then add
+		// to the slot that was just freed (slot 1 after dropping from slot 0 or 1).
+		// After DropCurrentWeapon, InventorySlots.Num() will be 1 (if 2 weapons)
+		// so the new weapon goes to slot index 1.
+		NewSlotIndex = MaxWeaponSlots - 1;
+	}
+
+	// Check slot restrictions before picking up
+	if (!IsWeaponAllowedInSlot(Weapon->WeaponStats.WeaponType, NewSlotIndex))
+	{
+		return;
+	}
 
 	if (InventorySlots.Num() < MaxWeaponSlots)
 	{

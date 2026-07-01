@@ -28,6 +28,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void DropCurrentWeapon();
 
+	/** Checks whether a weapon of the given type is allowed in the specified slot.
+	 *  Slot 0 (primary) accepts any weapon type.
+	 *  Slot 1 (secondary) only accepts Pistol/SMG unless the Overkill perk is active. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool IsWeaponAllowedInSlot(EWeaponType WeaponType, int32 SlotIndex) const;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
 	int32 MaxWeaponSlots = 2;
 
@@ -36,4 +42,7 @@ public:
 
 protected:
 	class UZeroDawnWeaponComponent* GetWeaponComponent() const;
+
+	/** Returns the owning character, or nullptr if the owner is not an AZeroDawnCharacter. */
+	class AZeroDawnCharacter* GetOwnerCharacter() const;
 };
