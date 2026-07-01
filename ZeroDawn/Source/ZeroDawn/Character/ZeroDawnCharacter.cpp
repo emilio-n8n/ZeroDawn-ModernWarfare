@@ -43,6 +43,49 @@ AZeroDawnCharacter::AZeroDawnCharacter(const FObjectInitializer& ObjectInitializ
 	bAlwaysRelevant = true;
 	NetUpdateFrequency = 100.0f;
 	NetPriority = 3.0f;
+
+	// Load input assets via ConstructorHelpers (must be in constructor for packaged builds)
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC_FPS(TEXT("/Game/ZeroDawn/Input/IMC_FPS.IMC_FPS"));
+	if (IMC_FPS.Succeeded())
+	{
+		InputMapping = IMC_FPS.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Move(TEXT("/Game/ZeroDawn/Input/Actions/IA_Move.IA_Move"));
+	if (IA_Move.Succeeded()) MoveAction = IA_Move.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Look(TEXT("/Game/ZeroDawn/Input/Actions/IA_Look.IA_Look"));
+	if (IA_Look.Succeeded()) LookAction = IA_Look.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Sprint(TEXT("/Game/ZeroDawn/Input/Actions/IA_Sprint.IA_Sprint"));
+	if (IA_Sprint.Succeeded()) SprintAction = IA_Sprint.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Crouch(TEXT("/Game/ZeroDawn/Input/Actions/IA_Crouch.IA_Crouch"));
+	if (IA_Crouch.Succeeded()) CrouchAction = IA_Crouch.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Jump(TEXT("/Game/ZeroDawn/Input/Actions/IA_Jump.IA_Jump"));
+	if (IA_Jump.Succeeded()) JumpAction = IA_Jump.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Slide(TEXT("/Game/ZeroDawn/Input/Actions/IA_Slide.IA_Slide"));
+	if (IA_Slide.Succeeded()) SlideAction = IA_Slide.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_ADS(TEXT("/Game/ZeroDawn/Input/Actions/IA_ADS.IA_ADS"));
+	if (IA_ADS.Succeeded()) ADSAction = IA_ADS.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Fire(TEXT("/Game/ZeroDawn/Input/Actions/IA_Fire.IA_Fire"));
+	if (IA_Fire.Succeeded()) FireAction = IA_Fire.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Reload(TEXT("/Game/ZeroDawn/Input/Actions/IA_Reload.IA_Reload"));
+	if (IA_Reload.Succeeded()) ReloadAction = IA_Reload.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Interact(TEXT("/Game/ZeroDawn/Input/Actions/IA_Interact.IA_Interact"));
+	if (IA_Interact.Succeeded()) InteractAction = IA_Interact.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Melee(TEXT("/Game/ZeroDawn/Input/Actions/IA_Melee.IA_Melee"));
+	if (IA_Melee.Succeeded()) MeleeAction = IA_Melee.Object;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Inspect(TEXT("/Game/ZeroDawn/Input/Actions/IA_Inspect.IA_Inspect"));
+	if (IA_Inspect.Succeeded()) InspectAction = IA_Inspect.Object;
 }
 
 void AZeroDawnCharacter::BeginPlay()
@@ -101,6 +144,7 @@ void AZeroDawnCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(AZeroDawnCharacter, Assists);
 	DOREPLIFETIME(AZeroDawnCharacter, Score);
 	DOREPLIFETIME(AZeroDawnCharacter, CurrentKillstreak);
+	DOREPLIFETIME(AZeroDawnCharacter, bIsSliding);
 	DOREPLIFETIME_CONDITION(AZeroDawnCharacter, KillerActor, COND_OwnerOnly);
 }
 
@@ -286,48 +330,10 @@ void AZeroDawnCharacter::CacheInputActions()
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
 	if (!Subsystem) return;
 
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC_FPS(TEXT("/Game/ZeroDawn/Input/IMC_FPS.IMC_FPS"));
-	if (IMC_FPS.Succeeded() && IMC_FPS.Object)
+	if (InputMapping)
 	{
-		InputMapping = IMC_FPS.Object;
 		Subsystem->AddMappingContext(InputMapping, 0);
 	}
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Move(TEXT("/Game/ZeroDawn/Input/Actions/IA_Move.IA_Move"));
-	if (IA_Move.Succeeded()) MoveAction = IA_Move.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Look(TEXT("/Game/ZeroDawn/Input/Actions/IA_Look.IA_Look"));
-	if (IA_Look.Succeeded()) LookAction = IA_Look.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Sprint(TEXT("/Game/ZeroDawn/Input/Actions/IA_Sprint.IA_Sprint"));
-	if (IA_Sprint.Succeeded()) SprintAction = IA_Sprint.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Crouch(TEXT("/Game/ZeroDawn/Input/Actions/IA_Crouch.IA_Crouch"));
-	if (IA_Crouch.Succeeded()) CrouchAction = IA_Crouch.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Jump(TEXT("/Game/ZeroDawn/Input/Actions/IA_Jump.IA_Jump"));
-	if (IA_Jump.Succeeded()) JumpAction = IA_Jump.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Slide(TEXT("/Game/ZeroDawn/Input/Actions/IA_Slide.IA_Slide"));
-	if (IA_Slide.Succeeded()) SlideAction = IA_Slide.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_ADS(TEXT("/Game/ZeroDawn/Input/Actions/IA_ADS.IA_ADS"));
-	if (IA_ADS.Succeeded()) ADSAction = IA_ADS.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Fire(TEXT("/Game/ZeroDawn/Input/Actions/IA_Fire.IA_Fire"));
-	if (IA_Fire.Succeeded()) FireAction = IA_Fire.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Reload(TEXT("/Game/ZeroDawn/Input/Actions/IA_Reload.IA_Reload"));
-	if (IA_Reload.Succeeded()) ReloadAction = IA_Reload.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Interact(TEXT("/Game/ZeroDawn/Input/Actions/IA_Interact.IA_Interact"));
-	if (IA_Interact.Succeeded()) InteractAction = IA_Interact.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Melee(TEXT("/Game/ZeroDawn/Input/Actions/IA_Melee.IA_Melee"));
-	if (IA_Melee.Succeeded()) MeleeAction = IA_Melee.Object;
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_Inspect(TEXT("/Game/ZeroDawn/Input/Actions/IA_Inspect.IA_Inspect"));
-	if (IA_Inspect.Succeeded()) InspectAction = IA_Inspect.Object;
 }
 
 void AZeroDawnCharacter::SetupInputs()
@@ -437,6 +443,7 @@ void AZeroDawnCharacter::StopCrouch()
 	ACharacter::UnCrouch();
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	ServerSetCrouching(false);
+	ServerSetSliding(false);
 }
 
 void AZeroDawnCharacter::StartJump()
@@ -471,7 +478,7 @@ void AZeroDawnCharacter::StartSlide()
 	}
 	GetCharacterMovement()->AddImpulse(SlideDirection * 300.0f, true);
 
-	GetWorldTimerManager().SetTimerForNextTick(this, &AZeroDawnCharacter::StopCrouch);
+	ServerSetSliding(true);
 
 	FTimerHandle SlideCooldownHandle;
 	GetWorldTimerManager().SetTimer(SlideCooldownHandle, [this]()
@@ -554,6 +561,12 @@ bool AZeroDawnCharacter::ServerSetCrouching_Validate(bool bNewCrouching) { retur
 void AZeroDawnCharacter::ServerSetCrouching_Implementation(bool bNewCrouching)
 {
 	bIsCrouching = bNewCrouching;
+}
+
+bool AZeroDawnCharacter::ServerSetSliding_Validate(bool bNewSliding) { return true; }
+void AZeroDawnCharacter::ServerSetSliding_Implementation(bool bNewSliding)
+{
+	bIsSliding = bNewSliding;
 }
 
 bool AZeroDawnCharacter::ServerFire_Validate() { return true; }

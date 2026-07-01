@@ -68,7 +68,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bIsCrouching = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bIsSliding = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
@@ -223,6 +223,9 @@ protected:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSetCrouching(bool bNewCrouching);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetSliding(bool bNewSliding);
 
 	// Weapon fire (server authoritative)
 	UFUNCTION(Server, Reliable, WithValidation)
