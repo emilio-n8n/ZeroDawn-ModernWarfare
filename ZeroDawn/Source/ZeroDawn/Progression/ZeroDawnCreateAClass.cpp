@@ -1,4 +1,6 @@
 #include "ZeroDawnCreateAClass.h"
+#include "../Character/ZeroDawnCharacter.h"
+#include "../Multiplayer/ZeroDawnPlayerState.h"
 
 UZeroDawnCreateAClass::UZeroDawnCreateAClass()
 {
@@ -52,6 +54,21 @@ void UZeroDawnCreateAClass::SaveLoadout(int32 Slot)
 	if (SavedLoadouts.IsValidIndex(Slot))
 	{
 		SavedLoadouts[Slot] = CurrentLoadout;
+
+		// Trigger save to disk via this character's PlayerState
+		AActor* OwnerActor = GetOwner();
+		if (OwnerActor && OwnerActor->HasAuthority())
+		{
+			AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(OwnerActor);
+			if (Char)
+			{
+				AZeroDawnPlayerState* PS = Char->GetPlayerState<AZeroDawnPlayerState>();
+				if (PS)
+				{
+					PS->ClientSaveGameData();
+				}
+			}
+		}
 	}
 }
 

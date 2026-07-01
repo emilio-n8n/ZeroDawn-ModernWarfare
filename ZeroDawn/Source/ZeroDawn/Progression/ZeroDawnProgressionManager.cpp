@@ -1,5 +1,6 @@
 #include "ZeroDawnProgressionManager.h"
 #include "../Character/ZeroDawnCharacter.h"
+#include "../Multiplayer/ZeroDawnPlayerState.h"
 
 UZeroDawnProgressionManager::UZeroDawnProgressionManager()
 {
@@ -21,10 +22,12 @@ void UZeroDawnProgressionManager::SetLevel(int32 NewLevel)
 	CurrentLevel = FMath::Clamp(NewLevel, 1, MaxLevel);
 	CurrentXP = 0;
 	OnLevelUp(CurrentLevel);
+	TriggerSaveOnLevelUp();
 }
 
 void UZeroDawnProgressionManager::CheckLevelUp()
 {
+	bool bLeveledUp = false;
 	while (CurrentLevel < MaxLevel)
 	{
 		int32 XPRequired = GetXPForNextLevel();
@@ -33,11 +36,33 @@ void UZeroDawnProgressionManager::CheckLevelUp()
 			CurrentXP -= XPRequired;
 			CurrentLevel++;
 			OnLevelUp(CurrentLevel);
+			bLeveledUp = true;
 		}
 		else
 		{
 			break;
 		}
+	}
+
+	// Save progress after any level-ups
+	if (bLeveledUp)
+	{
+		TriggerSaveOnLevelUp();
+	}
+}
+
+void UZeroDawnProgressionManager::TriggerSaveOnLevelUp()
+{
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor || !OwnerActor->HasAuthority()) return;
+
+	AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(OwnerActor);
+	if (!Char) return;
+
+	AZeroDawnPlayerState* PS = Char->GetPlayerState<AZeroDawnPlayerState>();
+	if (PS)
+	{
+		PS->ClientSaveGameData();
 	}
 }
 

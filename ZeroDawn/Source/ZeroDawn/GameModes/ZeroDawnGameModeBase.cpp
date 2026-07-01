@@ -280,7 +280,44 @@ void AZeroDawnGameModeBase::CheckMatchEndConditions()
 
 void AZeroDawnGameModeBase::OnPlayerKilled(AController* Killer, AController* Victim) {}
 
-void AZeroDawnGameModeBase::OnMatchEnd() {}
+void AZeroDawnGameModeBase::OnMatchEnd()
+{
+	// Save progress for all players on match end
+	for (APlayerState* PS : GameState->PlayerArray)
+	{
+		AZeroDawnPlayerState* ZDPS = Cast<AZeroDawnPlayerState>(PS);
+		if (ZDPS)
+		{
+			// Determine win/loss for this player (if team-based)
+			AZeroDawnGameState* ZDGS = GetZDGameState();
+			if (ZDGS && ZDGS->MatchState == EMatchState::MatchEnded)
+			{
+				bool bPlayerWon = false;
+
+				if (ZDPS->PlayerTeam == ETeamType::Alpha && ZDGS->TeamAlphaScore > ZDGS->TeamBravoScore)
+				{
+					bPlayerWon = true;
+				}
+				else if (ZDPS->PlayerTeam == ETeamType::Bravo && ZDGS->TeamBravoScore > ZDGS->TeamAlphaScore)
+				{
+					bPlayerWon = true;
+				}
+
+				if (bPlayerWon)
+				{
+					ZDPS->AddWin();
+				}
+				else
+				{
+					ZDPS->AddLoss();
+				}
+			}
+
+			// Trigger client-side save
+			ZDPS->ClientSaveGameData();
+		}
+	}
+}
 
 void AZeroDawnGameModeBase::FindSpawnPoints()
 {

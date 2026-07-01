@@ -74,6 +74,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Progression")
 	void OnLevelUp(int32 NewLevel);
 
+	UFUNCTION(BlueprintCallable, Category = "Progression")
+	void TriggerSaveOnLevelUp();
+
 protected:
 	void CheckLevelUp();
 };

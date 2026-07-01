@@ -74,4 +74,6 @@ public:
 
 protected:
 	APlayerController* GetPC() const;
+
+	void TriggerSettingsSave();
 };

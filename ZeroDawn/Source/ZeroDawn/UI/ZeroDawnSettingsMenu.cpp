@@ -2,6 +2,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "../Character/ZeroDawnCharacter.h"
+#include "../Multiplayer/ZeroDawnPlayerState.h"
 
 AZeroDawnSettingsMenu::AZeroDawnSettingsMenu()
 {
@@ -101,6 +102,8 @@ void AZeroDawnSettingsMenu::ApplyGraphicsSettings(int32 QualityLevel, int32 Reso
 	{
 		SetCVar(TEXT("r.ScreenPercentage"), FMath::Clamp(ResolutionScale, 50, 200));
 	}
+
+	TriggerSettingsSave();
 }
 
 void AZeroDawnSettingsMenu::ApplyAudioSettings(float Master, float SFX, float Music)
@@ -113,6 +116,8 @@ void AZeroDawnSettingsMenu::ApplyAudioSettings(float Master, float SFX, float Mu
 	{
 		UGameplayStatics::SetSoundMixClassOverride(GetWorld(), SoundMix, SoundClass, MasterVolume, 1.0f, 0.0f);
 	}
+
+	TriggerSettingsSave();
 }
 
 void AZeroDawnSettingsMenu::ApplyControlsSettings(float Sensitivity, float ADSMult, bool InvertY)
@@ -131,6 +136,21 @@ void AZeroDawnSettingsMenu::ApplyControlsSettings(float Sensitivity, float ADSMu
 		if (PC->PlayerCameraManager)
 		{
 			PC->PlayerCameraManager->bInvertYAxis = bInvertY;
+		}
+	}
+
+	TriggerSettingsSave();
+}
+
+void AZeroDawnSettingsMenu::TriggerSettingsSave()
+{
+	APlayerController* PC = GetPC();
+	if (PC)
+	{
+		AZeroDawnPlayerState* PS = PC->GetPlayerState<AZeroDawnPlayerState>();
+		if (PS)
+		{
+			PS->SaveCurrentProgress();
 		}
 	}
 }

@@ -3,6 +3,8 @@
 #include "../GameTypes.h"
 #include "ZeroDawnPlayerState.generated.h"
 
+class UZeroDawnSaveGame;
+
 UCLASS()
 class AZeroDawnPlayerState : public APlayerState
 {
@@ -72,4 +74,63 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 	FPlayerScoreData GetScoreData() const;
+
+	// ============================================================
+	// Save / Load System
+	// ============================================================
+
+	/**
+	* Server-initiated: tells this player's client to save their game data.
+	* Called on level up, match end, settings changes, and loadout changes.
+	*/
+	UFUNCTION(Client, Reliable)
+	void ClientSaveGameData();
+
+	/**
+	* Client-side: collects all current data and persists to disk via UGameplayStatics.
+	* Called when this PlayerState receives the ClientSaveGameData RPC.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	void SaveCurrentProgress();
+
+	/**
+	* Client-side: loads saved data from disk and restores progression.
+	* Called automatically in BeginPlay() on the client.
+	* Can also be called manually to refresh data.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	void LoadSavedProgress();
+
+	/**
+	* Get a player identifier string suitable for save slot naming.
+	* Uses unique net ID if available, otherwise falls back to player name or a default.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	FString GetSavePlayerId() const;
+
+	/**
+	* Track a win/loss for career stats (called on match end).
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	void AddWin();
+
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	void AddLoss();
+
+	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Score")
+	int32 CareerWins = 0;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Score")
+	int32 CareerLosses = 0;
+
+	/**
+	* Track a weapon kill for usage statistics.
+	* @param WeaponType - The type of weapon used for this kill
+	*/
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	void RecordWeaponKill(EWeaponType WeaponType);
+
+	/** Map of weapon type → kill count for most-used weapon tracking */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGame")
+	TMap<EWeaponType, int32> WeaponUsageMap;
 };
