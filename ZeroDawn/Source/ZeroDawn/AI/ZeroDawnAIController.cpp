@@ -101,6 +101,9 @@ void AZeroDawnAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus
 
 	if (TargetChar->TeamType == ETeamType::None) return;
 
+	// ColdBlooded perk: AI ignores players with this perk
+	if (TargetChar->bColdBlooded) return;
+
 	AZeroDawnCharacter* OwnerChar = Cast<AZeroDawnCharacter>(GetPawn());
 	if (OwnerChar && TargetChar->TeamType == OwnerChar->TeamType) return;
 

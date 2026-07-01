@@ -143,6 +143,28 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Score")
 	int32 CurrentKillstreak = 0;
 
+	// Perk-related properties
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perks")
+	bool bColdBlooded = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perks")
+	bool bGhost = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perks")
+	bool bOverkill = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perks")
+	float ExplosiveDamageMultiplier = 1.0f;
+
+	// Health regen (affected by QuickFix perk)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Health")
+	float HealthRegenDelay = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Health")
+	float HealthRegenRate = 5.0f;
+
+	float LastDamageTime = 0.0f;
+
 	UFUNCTION(BlueprintCallable, Category = "Score")
 	void AddKill();
 

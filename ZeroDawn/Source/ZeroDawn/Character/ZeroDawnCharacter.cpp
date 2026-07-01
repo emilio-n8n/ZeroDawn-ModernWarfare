@@ -13,6 +13,7 @@
 #include "../Interactive/ZeroDawnInteractable.h"
 #include "../Interactive/ZeroDawnBomb.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/DamageEvents.h"
 
 AZeroDawnCharacter::AZeroDawnCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -178,12 +179,26 @@ float AZeroDawnCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dam
 
 	float ActualDamage = DamageAmount;
 
+	// EOD perk: reduce explosive damage by 50%
+	if (ExplosiveDamageMultiplier < 1.0f)
+	{
+		// Check if this is radial/explosive damage (from bombs, grenades, etc.)
+		bool bIsExplosive = DamageEvent.IsOfType(FRadialDamageEvent::ClassID);
+		if (bIsExplosive)
+		{
+			ActualDamage *= ExplosiveDamageMultiplier;
+		}
+	}
+
 	if (CurrentArmor > 0.0f)
 	{
 		float ArmorAbsorb = FMath::Min(CurrentArmor, ActualDamage * 0.7f);
 		CurrentArmor -= ArmorAbsorb;
 		ActualDamage -= ArmorAbsorb;
 	}
+
+	// Track last damage time for health regen delay
+	LastDamageTime = GetWorld()->GetTimeSeconds();
 
 	CurrentHealth = FMath::Clamp(CurrentHealth - ActualDamage, 0.0f, MaxHealth);
 
