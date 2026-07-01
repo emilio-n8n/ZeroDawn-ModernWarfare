@@ -14,10 +14,13 @@ void AZeroDawnMatchEndSequence::ShowMatchEnd(ETeamType WinningTeam, int32 AlphaS
 {
 	OnMatchEnd(WinningTeam, AlphaScore, BravoScore, Scoreboard);
 
-	FTimerHandle DelayHandle;
-	GetWorldTimerManager().SetTimer(DelayHandle, [this]()
+	TWeakObjectPtr<AZeroDawnMatchEndSequence> WeakThis(this);
+	GetWorldTimerManager().SetTimer(ReturnToLobbyTimerHandle, [WeakThis]()
 	{
-		ReturnToLobby();
+		if (WeakThis.IsValid())
+		{
+			WeakThis->ReturnToLobby();
+		}
 	}, MatchEndDelay, false);
 }
 
@@ -28,11 +31,16 @@ void AZeroDawnMatchEndSequence::ShowTopPlayers(const TArray<FPlayerScoreData>& T
 
 void AZeroDawnMatchEndSequence::ReturnToLobby()
 {
-	APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
-	if (PC)
+	if (!GetWorld()) return;
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		PC->SetShowMouseCursor(true);
-		PC->SetInputMode(FInputModeUIOnly());
+		APlayerController* PC = It->Get();
+		if (PC)
+		{
+			PC->SetShowMouseCursor(true);
+			PC->SetInputMode(FInputModeUIOnly());
+		}
 	}
 
 	UGameplayStatics::OpenLevel(GetWorld(), FName("LobbyMap"));

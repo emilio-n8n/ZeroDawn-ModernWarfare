@@ -1,5 +1,7 @@
 #pragma once
 #include "../ZeroDawn.h"
+#include "Sound/SoundMix.h"
+#include "Sound/SoundClass.h"
 #include "ZeroDawnSettingsMenu.generated.h"
 
 UCLASS()
@@ -63,6 +65,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Settings")
 	int32 GraphicsQuality = 3;
+
+	UPROPERTY()
+	USoundMix* SoundMix;
+
+	UPROPERTY()
+	USoundClass* SoundClass;
 
 protected:
 	APlayerController* GetPC() const;

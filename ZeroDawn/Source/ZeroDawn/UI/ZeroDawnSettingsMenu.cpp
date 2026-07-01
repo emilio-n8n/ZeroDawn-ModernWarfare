@@ -7,6 +7,18 @@ AZeroDawnSettingsMenu::AZeroDawnSettingsMenu()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = false;
+
+	static ConstructorHelpers::FObjectFinder<USoundMix> SoundMixFinder(TEXT("/Game/ZeroDawn/Audio/ZeroDawnSoundMix.ZeroDawnSoundMix"));
+	if (SoundMixFinder.Succeeded())
+	{
+		SoundMix = SoundMixFinder.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundClass> SoundClassFinder(TEXT("/Game/ZeroDawn/Audio/ZeroDawnSoundClass.ZeroDawnSoundClass"));
+	if (SoundClassFinder.Succeeded())
+	{
+		SoundClass = SoundClassFinder.Object;
+	}
 }
 
 APlayerController* AZeroDawnSettingsMenu::GetPC() const
@@ -97,7 +109,10 @@ void AZeroDawnSettingsMenu::ApplyAudioSettings(float Master, float SFX, float Mu
 	SFXVolume = FMath::Clamp(SFX, 0.0f, 1.0f);
 	MusicVolume = FMath::Clamp(Music, 0.0f, 1.0f);
 
-	UGameplayStatics::SetSoundMixClassOverride(GetWorld(), nullptr, nullptr, MasterVolume, 1.0f, 0.0f);
+	if (SoundMix && SoundClass)
+	{
+		UGameplayStatics::SetSoundMixClassOverride(GetWorld(), SoundMix, SoundClass, MasterVolume, 1.0f, 0.0f);
+	}
 }
 
 void AZeroDawnSettingsMenu::ApplyControlsSettings(float Sensitivity, float ADSMult, bool InvertY)
@@ -109,7 +124,14 @@ void AZeroDawnSettingsMenu::ApplyControlsSettings(float Sensitivity, float ADSMu
 	APlayerController* PC = GetPC();
 	if (PC)
 	{
-		PC->PlayerCameraManager->DefaultFOV = 90.0f;
+		if (PC->PlayerInput)
+		{
+			PC->PlayerInput->SetMouseSensitivity(MouseSensitivity);
+		}
+		if (PC->PlayerCameraManager)
+		{
+			PC->PlayerCameraManager->bInvertYAxis = bInvertY;
+		}
 	}
 }
 

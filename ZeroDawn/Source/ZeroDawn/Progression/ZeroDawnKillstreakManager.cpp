@@ -33,7 +33,7 @@ void UZeroDawnKillstreakManager::CheckKillstreaks(int32 CurrentKillstreak)
 		UZeroDawnKillstreakHUD* KHUD = OwnerChar->FindComponentByClass<UZeroDawnKillstreakHUD>();
 		if (KHUD)
 		{
-			KHUD->MulticastShowStreak(CurrentKillstreak);
+			KHUD->ClientShowStreak(CurrentKillstreak);
 		}
 
 		APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());

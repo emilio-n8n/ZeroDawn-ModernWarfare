@@ -38,6 +38,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Match End")
 	UUserWidget* FinalScoreboardWidget;
 
+	FTimerHandle ReturnToLobbyTimerHandle;
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Match End")
 	void PlayVictoryMusic();
 

@@ -29,11 +29,11 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Killstreak")
 	void OnNukeDetonated();
 
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastShowStreak(int32 CurrentKillstreak);
+	UFUNCTION(Client, Reliable)
+	void ClientShowStreak(int32 CurrentKillstreak);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastNukeDetonated();
+	UFUNCTION(Client, Reliable)
+	void ClientNukeDetonated();
 
 	UFUNCTION(BlueprintCallable, Category = "Killstreak")
 	FString GetStreakName(EKillstreakType Type) const;

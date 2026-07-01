@@ -6,11 +6,8 @@ UZeroDawnKillstreakHUD::UZeroDawnKillstreakHUD()
 	SetIsReplicatedByDefault(true);
 }
 
-void UZeroDawnKillstreakHUD::MulticastShowStreak_Implementation(int32 CurrentKillstreak)
+void UZeroDawnKillstreakHUD::ClientShowStreak_Implementation(int32 CurrentKillstreak)
 {
-	AZeroDawnCharacter* OwnerChar = Cast<AZeroDawnCharacter>(GetOwner());
-	if (OwnerChar && !OwnerChar->IsLocallyControlled()) return;
-
 	ShowStreakCounter(CurrentKillstreak);
 
 	if (CurrentKillstreak % 5 == 0 && CurrentKillstreak > 0 && StreakCounterSound)
@@ -19,11 +16,8 @@ void UZeroDawnKillstreakHUD::MulticastShowStreak_Implementation(int32 CurrentKil
 	}
 }
 
-void UZeroDawnKillstreakHUD::MulticastNukeDetonated_Implementation()
+void UZeroDawnKillstreakHUD::ClientNukeDetonated_Implementation()
 {
-	AZeroDawnCharacter* OwnerChar = Cast<AZeroDawnCharacter>(GetOwner());
-	if (OwnerChar && !OwnerChar->IsLocallyControlled()) return;
-
 	if (NukeDetonationSound)
 	{
 		UGameplayStatics::PlaySound2D(this, NukeDetonationSound);
