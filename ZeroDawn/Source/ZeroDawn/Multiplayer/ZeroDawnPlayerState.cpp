@@ -134,6 +134,16 @@ void AZeroDawnPlayerState::AddLoss()
 	CareerLosses++;
 }
 
+void AZeroDawnPlayerState::ServerSetReady_Implementation(bool bNewReady)
+{
+	bIsReady = bNewReady;
+}
+
+bool AZeroDawnPlayerState::ServerSetReady_Validate(bool bNewReady)
+{
+	return true;
+}
+
 void AZeroDawnPlayerState::RecordWeaponKill(EWeaponType WeaponType)
 {
 	if (!HasAuthority()) return;

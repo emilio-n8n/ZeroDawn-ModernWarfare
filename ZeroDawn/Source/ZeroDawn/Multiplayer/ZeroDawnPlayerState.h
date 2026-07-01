@@ -60,6 +60,10 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Match")
 	bool bIsReady = false;
 
+	/** Server RPC to toggle ready state from the client (used in lobby widget). */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetReady(bool bNewReady);
+
 	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Match")
 	bool bHasSpawned = false;
 
