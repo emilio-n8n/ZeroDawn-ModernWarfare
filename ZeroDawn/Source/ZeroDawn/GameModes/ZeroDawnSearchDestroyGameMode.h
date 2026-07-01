@@ -74,6 +74,9 @@ protected:
 	int32 AlphaAlive = 0;
 	int32 BravoAlive = 0;
 
+	/** Timer handle for the delay between rounds */
+	FTimerHandle NewRoundTimerHandle;
+
 	void CountAlivePlayers();
 
 	/** Find and cache the bomb actor, bind its delegates */

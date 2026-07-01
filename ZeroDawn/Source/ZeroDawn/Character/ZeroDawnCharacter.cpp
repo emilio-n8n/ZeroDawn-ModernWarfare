@@ -11,6 +11,7 @@
 #include "../UI/ZeroDawnHUD.h"
 #include "../UI/ZeroDawnHitmarker.h"
 #include "../Interactive/ZeroDawnInteractable.h"
+#include "../Interactive/ZeroDawnBomb.h"
 #include "DrawDebugHelpers.h"
 
 AZeroDawnCharacter::AZeroDawnCharacter(const FObjectInitializer& ObjectInitializer)
@@ -187,6 +188,25 @@ void AZeroDawnCharacter::Die()
 	bIsDead = true;
 
 	AddDeath();
+
+	// Drop the bomb if carrying it, and cancel any defuse in progress
+	if (HasAuthority())
+	{
+		for (TActorIterator<AZeroDawnBomb> It(GetWorld()); It; ++It)
+		{
+			AZeroDawnBomb* Bomb = *It;
+			if (!Bomb) continue;
+
+			if (Bomb->CarriedByCharacter == this)
+			{
+				Bomb->DropBomb();
+			}
+			if (Bomb->InteractingDefuser == this)
+			{
+				Bomb->CancelDefuse();
+			}
+		}
+	}
 
 	MulticastOnDeath();
 	MulticastPlayDeathEffect();

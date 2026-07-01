@@ -134,10 +134,15 @@ void AZeroDawnSearchDestroyGameMode::EndRound(ETeamType WinningTeam)
 		ZDGS->TeamBravoScore = BravoRoundWins;
 	}
 
+	// Cancel any bomb-related timers (defuse in progress)
+	if (ActiveBomb)
+	{
+		ActiveBomb->CancelDefuse();
+	}
+
 	CheckMatchEndConditions();
 
-	FTimerHandle NewRoundHandle;
-	GetWorldTimerManager().SetTimer(NewRoundHandle, this, &AZeroDawnSearchDestroyGameMode::StartNewRound, 5.0f, false);
+	GetWorldTimerManager().SetTimer(NewRoundTimerHandle, this, &AZeroDawnSearchDestroyGameMode::StartNewRound, 5.0f, false);
 }
 
 void AZeroDawnSearchDestroyGameMode::OnBombPlanted()

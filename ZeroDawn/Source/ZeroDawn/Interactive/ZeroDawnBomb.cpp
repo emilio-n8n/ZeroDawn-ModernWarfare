@@ -234,9 +234,18 @@ void AZeroDawnBomb::ResetBomb()
 
 void AZeroDawnBomb::Interact_Implementation(AActor* Interactor)
 {
-	// This handles defusing when the bomb is planted
-	// Called on the owning client via line trace; forwards to server RPC
-	ServerStartDefuse(Interactor);
+	if (!Interactor) return;
+
+	if (bIsPlanted && !bIsDefused)
+	{
+		// Bomb is planted → start defusing
+		ServerStartDefuse(Interactor);
+	}
+	else if (!bIsPlanted && !bIsDefused && !bIsCarried)
+	{
+		// Bomb is on the ground → pick it up
+		ServerPickup(Interactor);
+	}
 }
 
 bool AZeroDawnBomb::ServerStartDefuse_Validate(AActor* Interactor) { return true; }
@@ -246,4 +255,54 @@ void AZeroDawnBomb::ServerStartDefuse_Implementation(AActor* Interactor)
 	if (!bIsPlanted || bIsDefused) return;
 
 	StartDefuse(Interactor);
+}
+
+bool AZeroDawnBomb::ServerPickup_Validate(AActor* Interactor) { return true; }
+void AZeroDawnBomb::ServerPickup_Implementation(AActor* Interactor)
+{
+	if (!HasAuthority()) return;
+	if (bIsPlanted || bIsDefused || bIsCarried) return;
+	if (!Interactor) return;
+
+	AZeroDawnCharacter* Character = Cast<AZeroDawnCharacter>(Interactor);
+	if (!Character) return;
+
+	// Set carry state
+	bIsCarried = true;
+	CarriedByCharacter = Character;
+
+	// Disable physics and collision while carried
+	BombMesh->SetSimulatePhysics(false);
+	SetActorEnableCollision(false);
+
+	// Attach to the character's mesh
+	USkeletalMeshComponent* CharacterMesh = Character->GetMesh();
+	if (CharacterMesh)
+	{
+		AttachToComponent(CharacterMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName(TEXT("BombSocket")));
+	}
+	else
+	{
+		AttachToActor(Character, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	}
+
+	OnRep_IsCarried();
+}
+
+void AZeroDawnBomb::DropBomb()
+{
+	if (!HasAuthority()) return;
+	if (!bIsCarried) return;
+
+	bIsCarried = false;
+	CarriedByCharacter = nullptr;
+
+	// Detach from the carrier
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	// Re-enable physics and collision so the bomb falls to the ground
+	BombMesh->SetSimulatePhysics(true);
+	SetActorEnableCollision(true);
+
+	OnRep_IsCarried();
 }

@@ -123,6 +123,14 @@ public:
 	/** Cancel any ongoing defuse interaction */
 	void CancelDefuse();
 
+	/** Drop the bomb (when carrier dies or intentionally drops) */
+	UFUNCTION(BlueprintCallable, Category = "Bomb")
+	void DropBomb();
+
+	/** The actor currently defusing (null if none) */
+	UPROPERTY(BlueprintReadOnly, Category = "Bomb")
+	AActor* InteractingDefuser = nullptr;
+
 	// ------------------------------------------------------------------
 	// IZeroDawnInteractable
 	// ------------------------------------------------------------------
@@ -132,13 +140,14 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStartDefuse(AActor* Interactor);
 
+	/** Server RPC: pick up the bomb (called from Interact_Implementation on client) */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerPickup(AActor* Interactor);
+
 protected:
 	FTimerHandle BombTimerHandle;
 	FTimerHandle DefuseTimerHandle;
 	float BombStartTime = 0.0f;
-
-	/** The actor currently defusing (null if none) */
-	AActor* InteractingDefuser = nullptr;
 
 	/** Internal: complete the defuse after the hold timer */
 	void CompleteDefuse();
