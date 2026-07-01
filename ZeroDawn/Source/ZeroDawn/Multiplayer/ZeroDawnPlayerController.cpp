@@ -34,6 +34,11 @@ void AZeroDawnPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!GetWorld())
+	{
+		return;
+	}
+
 	// Periodically update the spectator overlay while in spectator mode
 	if (bIsSpectating && IsLocalController())
 	{
@@ -261,7 +266,7 @@ void AZeroDawnPlayerController::RefreshSpectateTargets()
 	}
 }
 
-void AZeroDawnPlayerController::UpdateSpectateOverlay()
+void AZeroDawnPlayerController::UpdateSpectatorOverlay()
 {
 	if (!bIsSpectating || !IsLocalController() || !SpectatorOverlay)
 	{
