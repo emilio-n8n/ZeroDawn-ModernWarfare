@@ -1,8 +1,11 @@
 #include "ZeroDawnWeaponComponent.h"
 #include "../Weapon/ZeroDawnWeapon.h"
+#include "../Weapon/ZeroDawnGrenade.h"
 #include "../Character/ZeroDawnCharacter.h"
 #include "../WeaponSystem/ZeroDawnWeaponInventory.h"
 #include "Engine/DamageEvents.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 UZeroDawnWeaponComponent::UZeroDawnWeaponComponent()
 {
@@ -171,6 +174,37 @@ void UZeroDawnWeaponComponent::ServerMeleeAttack_Implementation()
 	{
 		FPointDamageEvent DamageEvent(MeleeDamage, Hit, -Forward, nullptr);
 		Hit.GetActor()->TakeDamage(MeleeDamage, DamageEvent, OwnerChar->GetController(), OwnerChar);
+	}
+}
+
+void UZeroDawnWeaponComponent::ThrowGrenade()
+{
+	ServerThrowGrenade();
+}
+
+bool UZeroDawnWeaponComponent::ServerThrowGrenade_Validate() { return true; }
+void UZeroDawnWeaponComponent::ServerThrowGrenade_Implementation()
+{
+	AZeroDawnCharacter* OwnerChar = GetOwnerCharacter();
+	if (!OwnerChar || !GrenadeClass) return;
+
+	FVector SpawnLocation = OwnerChar->FirstPersonCameraComponent->GetComponentLocation();
+	FRotator SpawnRotation = OwnerChar->FirstPersonCameraComponent->GetComponentRotation();
+	FVector LaunchDirection = SpawnRotation.Vector();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = OwnerChar;
+	SpawnParams.Instigator = OwnerChar;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+	AZeroDawnGrenade* Grenade = GetWorld()->SpawnActor<AZeroDawnGrenade>(GrenadeClass, SpawnLocation, SpawnRotation, SpawnParams);
+	if (Grenade)
+	{
+		// Apply the initial velocity to launch the grenade
+		if (Grenade->ProjectileComponent)
+		{
+			Grenade->ProjectileComponent->Velocity = LaunchDirection * GrenadeLaunchSpeed;
+		}
 	}
 }
 

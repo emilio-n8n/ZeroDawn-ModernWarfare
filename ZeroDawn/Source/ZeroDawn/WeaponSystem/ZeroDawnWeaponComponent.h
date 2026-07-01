@@ -4,6 +4,7 @@
 #include "ZeroDawnWeaponComponent.generated.h"
 
 class AZeroDawnWeapon;
+class AZeroDawnGrenade;
 class AZeroDawnCharacter;
 
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -48,6 +49,9 @@ public:
 	void MeleeAttack();
 
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
+	void ThrowGrenade();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapons")
 	void HideWeapons();
 
 	UFUNCTION(BlueprintCallable, Category = "Weapons")
@@ -58,6 +62,13 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapons")
 	float MeleeRange = 150.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapons")
+	TSubclassOf<AZeroDawnGrenade> GrenadeClass;
+
+	/** Initial speed of the thrown grenade. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapons")
+	float GrenadeLaunchSpeed = 1500.0f;
 
 protected:
 	AZeroDawnCharacter* GetOwnerCharacter() const;
@@ -70,6 +81,9 @@ protected:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerMeleeAttack();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerThrowGrenade();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastEquipWeapon(int32 WeaponIndex);
