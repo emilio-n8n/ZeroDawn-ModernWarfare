@@ -1,6 +1,7 @@
 #include "ZeroDawnCreateAClass.h"
 #include "../Character/ZeroDawnCharacter.h"
 #include "../Multiplayer/ZeroDawnPlayerState.h"
+#include "ZeroDawnSaveGame.h"
 
 UZeroDawnCreateAClass::UZeroDawnCreateAClass()
 {
@@ -51,22 +52,51 @@ void UZeroDawnCreateAClass::AddAttachment(EWeaponType ForWeapon, const FWeaponAt
 
 void UZeroDawnCreateAClass::SaveLoadout(int32 Slot)
 {
-	if (SavedLoadouts.IsValidIndex(Slot))
-	{
-		SavedLoadouts[Slot] = CurrentLoadout;
+	if (!SavedLoadouts.IsValidIndex(Slot)) return;
 
-		// Trigger save to disk via this character's PlayerState
-		AActor* OwnerActor = GetOwner();
-		if (OwnerActor && OwnerActor->HasAuthority())
+	// Update in-memory array
+	SavedLoadouts[Slot] = CurrentLoadout;
+
+	// Persist to disk via SaveGame system
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor) return;
+
+	if (OwnerActor->HasAuthority())
+	{
+		// Server path: trigger Client RPC to save on the client (where filesystem is available)
+		AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(OwnerActor);
+		if (Char)
 		{
-			AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(OwnerActor);
-			if (Char)
+			AZeroDawnPlayerState* PS = Char->GetPlayerState<AZeroDawnPlayerState>();
+			if (PS)
 			{
-				AZeroDawnPlayerState* PS = Char->GetPlayerState<AZeroDawnPlayerState>();
-				if (PS)
+				PS->ClientSaveGameData();
+			}
+		}
+	}
+	else
+	{
+		// Client path: write directly to SaveGame
+		AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(OwnerActor);
+		if (Char)
+		{
+			AZeroDawnPlayerState* PS = Char->GetPlayerState<AZeroDawnPlayerState>();
+			if (PS)
+			{
+				const FString PlayerId = PS->GetSavePlayerId();
+
+				// Load existing save data to preserve other fields
+				UZeroDawnSaveGame* SaveData = UZeroDawnSaveGame::LoadProgress(this, PlayerId);
+				if (!SaveData)
 				{
-					PS->ClientSaveGameData();
+					SaveData = NewObject<UZeroDawnSaveGame>();
 				}
+
+				// Write loadout data
+				SaveData->SavedLoadouts = SavedLoadouts;
+
+				// Persist to disk
+				UZeroDawnSaveGame::SaveProgress(this, PlayerId, SaveData);
 			}
 		}
 	}
@@ -74,8 +104,31 @@ void UZeroDawnCreateAClass::SaveLoadout(int32 Slot)
 
 void UZeroDawnCreateAClass::LoadLoadout(int32 Slot)
 {
-	if (SavedLoadouts.IsValidIndex(Slot))
+	if (!SavedLoadouts.IsValidIndex(Slot)) return;
+
+	// First try to load the most recent data from disk
+	AActor* OwnerActor = GetOwner();
+	if (OwnerActor)
 	{
-		CurrentLoadout = SavedLoadouts[Slot];
+		AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(OwnerActor);
+		if (Char)
+		{
+			AZeroDawnPlayerState* PS = Char->GetPlayerState<AZeroDawnPlayerState>();
+			if (PS)
+			{
+				const FString PlayerId = PS->GetSavePlayerId();
+				UZeroDawnSaveGame* SaveData = UZeroDawnSaveGame::LoadProgress(this, PlayerId);
+				if (SaveData && SaveData->SavedLoadouts.IsValidIndex(Slot))
+				{
+					// Restore from disk-saved data
+					SavedLoadouts = SaveData->SavedLoadouts;
+					CurrentLoadout = SavedLoadouts[Slot];
+					return;
+				}
+			}
+		}
 	}
+
+	// Fallback: load from in-memory array (which was populated from disk during BeginPlay)
+	CurrentLoadout = SavedLoadouts[Slot];
 }
