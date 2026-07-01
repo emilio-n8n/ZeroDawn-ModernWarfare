@@ -1,6 +1,7 @@
 #include "ZeroDawnGameModeBase.h"
 #include "../Multiplayer/ZeroDawnGameState.h"
 #include "../Multiplayer/ZeroDawnPlayerState.h"
+#include "../Multiplayer/ZeroDawnPlayerController.h"
 #include "../Character/ZeroDawnCharacter.h"
 #include "../WeaponSystem/ZeroDawnWeaponComponent.h"
 #include "../Weapon/ZeroDawnWeapon.h"
@@ -13,6 +14,7 @@ AZeroDawnGameModeBase::AZeroDawnGameModeBase()
 
 	GameStateClass = AZeroDawnGameState::StaticClass();
 	PlayerStateClass = AZeroDawnPlayerState::StaticClass();
+	PlayerControllerClass = AZeroDawnPlayerController::StaticClass();
 
 	bUseSeamlessTravel = true;
 	bDelayedStart = true;

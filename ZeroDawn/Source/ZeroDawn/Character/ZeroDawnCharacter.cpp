@@ -8,6 +8,8 @@
 #include "../Progression/ZeroDawnProgressionManager.h"
 #include "../Progression/ZeroDawnPerkSystem.h"
 #include "../Multiplayer/ZeroDawnPlayerState.h"
+#include "../Multiplayer/ZeroDawnPlayerController.h"
+#include "../Multiplayer/ZeroDawnKillcamManager.h"
 #include "../UI/ZeroDawnHUD.h"
 #include "../UI/ZeroDawnHitmarker.h"
 #include "../Interactive/ZeroDawnInteractable.h"
@@ -250,6 +252,8 @@ void AZeroDawnCharacter::Die()
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
 
+	// Server-side respawn timer fallback. The killcam may trigger respawn earlier
+	// (at ~3 seconds), which will destroy this pawn and cancel this pending timer.
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &AZeroDawnCharacter::RequestRespawn, RespawnDelay, false);
 }
 
@@ -269,6 +273,16 @@ void AZeroDawnCharacter::MulticastOnDeath_Implementation()
 	if (PC)
 	{
 		UZeroDawnCameraShake::PlayExplosionShake(PC);
+
+		// Start the killcam on the local player's controller
+		if (PC->IsLocalController())
+		{
+			AZeroDawnPlayerController* ZDPC = Cast<AZeroDawnPlayerController>(PC);
+			if (ZDPC && ZDPC->KillcamManager)
+			{
+				ZDPC->KillcamManager->StartKillcam(KillerActor, this);
+			}
+		}
 	}
 
 	if (FirstPersonCameraComponent)
@@ -279,14 +293,11 @@ void AZeroDawnCharacter::MulticastOnDeath_Implementation()
 
 void AZeroDawnCharacter::RequestRespawn()
 {
-	if (HasAuthority())
-	{
-		ServerRequestRespawn();
-	}
-	else
-	{
-		ServerRequestRespawn();
-	}
+	// Cancel any pending respawn timer to prevent double-respawn
+	// (e.g., killcam triggered this before the AI fallback timer)
+	GetWorldTimerManager().ClearTimer(RespawnTimerHandle);
+
+	ServerRequestRespawn();
 }
 
 bool AZeroDawnCharacter::ServerRequestRespawn_Validate() { return true; }
