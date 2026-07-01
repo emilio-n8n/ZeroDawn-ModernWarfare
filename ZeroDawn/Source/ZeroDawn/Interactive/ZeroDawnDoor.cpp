@@ -60,3 +60,8 @@ void AZeroDawnDoor::CloseDoor()
 	bIsOpen = false;
 	bTargetOpen = false;
 }
+
+void AZeroDawnDoor::Interact_Implementation(AActor* Interactor)
+{
+	ToggleDoor();
+}

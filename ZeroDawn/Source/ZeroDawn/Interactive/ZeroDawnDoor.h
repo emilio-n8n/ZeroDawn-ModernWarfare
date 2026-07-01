@@ -1,9 +1,10 @@
 #pragma once
 #include "../ZeroDawn.h"
+#include "ZeroDawnInteractable.h"
 #include "ZeroDawnDoor.generated.h"
 
 UCLASS()
-class AZeroDawnDoor : public AActor
+class AZeroDawnDoor : public AActor, public IZeroDawnInteractable
 {
 	GENERATED_BODY()
 
@@ -40,6 +41,9 @@ public:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerToggleDoor();
+
+	// IInteractable implementation
+	virtual void Interact_Implementation(AActor* Interactor) override;
 
 protected:
 	FRotator ClosedRotation;

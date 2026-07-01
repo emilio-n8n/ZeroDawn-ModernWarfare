@@ -10,6 +10,8 @@
 #include "../Multiplayer/ZeroDawnPlayerState.h"
 #include "../UI/ZeroDawnHUD.h"
 #include "../UI/ZeroDawnHitmarker.h"
+#include "../Interactive/ZeroDawnInteractable.h"
+#include "DrawDebugHelpers.h"
 
 AZeroDawnCharacter::AZeroDawnCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -309,8 +311,40 @@ void AZeroDawnCharacter::AddScore(int32 Amount)
 	Score += Amount;
 }
 
-void AZeroDawnCharacter::MulticastPlayHitEffect_Implementation(FVector HitLocation, FRotator HitRotation) {}
-void AZeroDawnCharacter::MulticastPlayDeathEffect_Implementation() {}
+void AZeroDawnCharacter::MulticastPlayHitEffect_Implementation(FVector HitLocation, FRotator HitRotation)
+{
+	if (BloodImpactEffect)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodImpactEffect, HitLocation, HitRotation, true);
+	}
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitLocation);
+	}
+}
+
+void AZeroDawnCharacter::MulticastPlayDeathEffect_Implementation()
+{
+	FVector DeathLocation = GetActorLocation();
+	FRotator DeathRotation = GetActorRotation();
+
+	if (BloodImpactEffect)
+	{
+		FVector BloodLocation = DeathLocation + FVector(0.0f, 0.0f, 50.0f);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodImpactEffect, BloodLocation, DeathRotation, true);
+	}
+
+	if (DeathExplosionEffect)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DeathExplosionEffect, DeathLocation, DeathRotation, true);
+	}
+
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, DeathLocation);
+	}
+}
 
 void AZeroDawnCharacter::PossessedBy(AController* NewController)
 {
@@ -528,7 +562,39 @@ void AZeroDawnCharacter::Reload()
 	ServerReload();
 }
 
-void AZeroDawnCharacter::Interact() {}
+void AZeroDawnCharacter::Interact()
+{
+	if (bIsDead) return;
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	FVector TraceEnd = CameraLocation + (CameraRotation.Vector() * InteractionRange);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.bTraceComplex = false;
+
+	FHitResult HitResult;
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TraceEnd, ECC_Visibility, QueryParams))
+	{
+		AActor* HitActor = HitResult.GetActor();
+		if (HitActor && HitActor->GetClass()->ImplementsInterface(UZeroDawnInteractable::StaticClass()))
+		{
+			IZeroDawnInteractable::Execute_Interact(HitActor, this);
+		}
+	}
+
+	// Debug line trace (visible in editor with "showdebug traces" or similar)
+	#if !UE_BUILD_SHIPPING
+	DrawDebugLine(GetWorld(), CameraLocation, TraceEnd, HitResult.bBlockingHit ? FColor::Green : FColor::Red, false, 2.0f, 0, 1.0f);
+	#endif
+}
+
 void AZeroDawnCharacter::InspectWeapon()
 {
 	if (bIsDead) return;

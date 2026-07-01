@@ -12,6 +12,7 @@ class UZeroDawnPerkSystem;
 class USpringArmComponent;
 class UCameraComponent;
 class UWidgetComponent;
+class IZeroDawnInteractable;
 
 UCLASS(config=Game)
 class AZeroDawnCharacter : public ACharacter
@@ -170,9 +171,16 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Killcam")
 	AActor* KillerActor = nullptr;
 
+	// Interaction
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction")
+	float InteractionRange = 300.0f;
+
 	// Effects
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
 	UParticleSystem* BloodImpactEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	UParticleSystem* DeathExplosionEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
 	USoundCue* DeathSound;
