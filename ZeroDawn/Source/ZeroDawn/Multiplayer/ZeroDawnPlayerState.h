@@ -122,6 +122,12 @@ public:
 	void AddLoss();
 
 	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Score")
+	int32 CareerKills = 0;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Score")
+	int32 CareerDeaths = 0;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Score")
 	int32 CareerWins = 0;
 
 	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Score")
@@ -137,4 +143,7 @@ public:
 	/** Map of weapon type → kill count for most-used weapon tracking */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "SaveGame")
 	TMap<EWeaponType, int32> WeaponUsageMap;
+
+	/** Timestamp of last save for playtime delta calculation (not replicated, client-only) */
+	float LastSaveTimestamp = 0.0f;
 };

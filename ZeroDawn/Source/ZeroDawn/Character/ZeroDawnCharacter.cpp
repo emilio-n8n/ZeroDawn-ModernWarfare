@@ -367,14 +367,17 @@ void AZeroDawnCharacter::AddKill()
 	CurrentKillstreak++;
 	Score += 100;
 
-	// Track weapon usage for this kill
-	if (WeaponComponent)
+	AZeroDawnPlayerState* PS = GetPlayerState<AZeroDawnPlayerState>();
+	if (PS)
 	{
-		AZeroDawnWeapon* CurrentWeapon = WeaponComponent->GetCurrentWeapon();
-		if (CurrentWeapon)
+		// Propagate to PlayerState for match scoring, replication, and career tracking
+		PS->AddKill();
+
+		// Track weapon usage for this kill
+		if (WeaponComponent)
 		{
-			AZeroDawnPlayerState* PS = GetPlayerState<AZeroDawnPlayerState>();
-			if (PS)
+			AZeroDawnWeapon* CurrentWeapon = WeaponComponent->GetCurrentWeapon();
+			if (CurrentWeapon)
 			{
 				PS->RecordWeaponKill(CurrentWeapon->WeaponStats.WeaponType);
 			}
@@ -398,6 +401,12 @@ void AZeroDawnCharacter::AddDeath()
 	if (!HasAuthority()) return;
 	Deaths++;
 	CurrentKillstreak = 0;
+
+	AZeroDawnPlayerState* PS = GetPlayerState<AZeroDawnPlayerState>();
+	if (PS)
+	{
+		PS->AddDeath();
+	}
 }
 
 void AZeroDawnCharacter::AddAssist()

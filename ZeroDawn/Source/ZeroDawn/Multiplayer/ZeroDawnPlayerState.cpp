@@ -21,6 +21,8 @@ AZeroDawnPlayerState::AZeroDawnPlayerState()
 	TotalScore = 0;
 	CurrentKillstreak = 0;
 	HighestKillstreak = 0;
+	CareerKills = 0;
+	CareerDeaths = 0;
 	CareerWins = 0;
 	CareerLosses = 0;
 }
@@ -52,6 +54,8 @@ void AZeroDawnPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(AZeroDawnPlayerState, bIsReady);
 	DOREPLIFETIME(AZeroDawnPlayerState, bHasSpawned);
 	DOREPLIFETIME(AZeroDawnPlayerState, CurrentLoadout);
+	DOREPLIFETIME(AZeroDawnPlayerState, CareerKills);
+	DOREPLIFETIME(AZeroDawnPlayerState, CareerDeaths);
 	DOREPLIFETIME(AZeroDawnPlayerState, CareerWins);
 	DOREPLIFETIME(AZeroDawnPlayerState, CareerLosses);
 	DOREPLIFETIME(AZeroDawnPlayerState, WeaponUsageMap);
@@ -70,6 +74,8 @@ void AZeroDawnPlayerState::CopyProperties(APlayerState* PlayerState)
 		ZDPS->TotalScore = TotalScore;
 		ZDPS->PlayerLevel = PlayerLevel;
 		ZDPS->PlayerXP = PlayerXP;
+		ZDPS->CareerKills = CareerKills;
+		ZDPS->CareerDeaths = CareerDeaths;
 		ZDPS->CareerWins = CareerWins;
 		ZDPS->CareerLosses = CareerLosses;
 		ZDPS->WeaponUsageMap = WeaponUsageMap;
@@ -85,7 +91,7 @@ void AZeroDawnPlayerState::Reset()
 	TotalScore = 0;
 	CurrentKillstreak = 0;
 	HighestKillstreak = 0;
-	// Note: PlayerLevel, PlayerXP, CareerWins, CareerLosses, WeaponUsageMap 
+	// Note: PlayerLevel, PlayerXP, CareerKills, CareerDeaths, CareerWins, CareerLosses, WeaponUsageMap 
 	// are NOT reset here - they persist across matches within a session.
 }
 
@@ -93,6 +99,7 @@ void AZeroDawnPlayerState::AddKill()
 {
 	if (!HasAuthority()) return;
 	TotalKills++;
+	CareerKills++;
 	CurrentKillstreak++;
 	TotalScore += 100;
 
@@ -106,6 +113,7 @@ void AZeroDawnPlayerState::AddDeath()
 {
 	if (!HasAuthority()) return;
 	TotalDeaths++;
+	CareerDeaths++;
 	CurrentKillstreak = 0;
 }
 
@@ -266,17 +274,22 @@ void AZeroDawnPlayerState::SaveCurrentProgress()
 		SaveData->bInvertY = SettingsMenu->bInvertY;
 	}
 
-	// --- Career Stats (accumulate) ---
-	// Add current match stats to career totals
-	SaveData->CareerKills += TotalKills;
-	SaveData->CareerDeaths += TotalDeaths;
+	// --- Career Stats (direct assignment from PlayerState career fields) ---
+	SaveData->CareerKills = CareerKills;
+	SaveData->CareerDeaths = CareerDeaths;
 	SaveData->CareerWins = CareerWins;
 	SaveData->CareerLosses = CareerLosses;
 
-	// Playtime: approximate by tracking session time
+	// --- Playtime: delta-based tracking (minutes) ---
 	if (UWorld* World = GetWorld())
 	{
-		SaveData->CareerPlaytime += World->GetTimeSeconds() / 60.0f; // Convert to minutes
+		const float CurrentWorldTime = World->GetTimeSeconds();
+		if (LastSaveTimestamp > 0.0f)
+		{
+			const float DeltaMinutes = (CurrentWorldTime - LastSaveTimestamp) / 60.0f;
+			SaveData->CareerPlaytime += FMath::Max(0.0f, DeltaMinutes);
+		}
+		LastSaveTimestamp = CurrentWorldTime;
 	}
 
 	// --- Weapon Usage ---
@@ -296,9 +309,17 @@ void AZeroDawnPlayerState::LoadSavedProgress()
 	// Restore progression
 	PlayerLevel = SaveData->PlayerLevel;
 	PlayerXP = SaveData->PlayerXP;
+	CareerKills = SaveData->CareerKills;
+	CareerDeaths = SaveData->CareerDeaths;
 	CareerWins = SaveData->CareerWins;
 	CareerLosses = SaveData->CareerLosses;
 	WeaponUsageMap = SaveData->WeaponUsageMap;
+
+	// Reset playtime save-tracking so next delta is correct
+	if (UWorld* World = GetWorld())
+	{
+		LastSaveTimestamp = World->GetTimeSeconds();
+	}
 
 	// Restore loadouts onto the character's CreateAClass component
 	if (AZeroDawnCharacter* Char = Cast<AZeroDawnCharacter>(GetPawn()))
