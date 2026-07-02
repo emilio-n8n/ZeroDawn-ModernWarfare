@@ -26,6 +26,9 @@ projectfiles.sh
 *.pdb
 *.aps
 
+# Build packages
+Package/
+
 # macOS
 .DS_Store
 *.swp

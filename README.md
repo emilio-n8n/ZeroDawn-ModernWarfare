@@ -1,6 +1,6 @@
 # Zero Dawn: Modern Warfare
 
-Un FPS militaire AAA réalisé avec Unreal Engine 5, codé entièrement par IA.
+Un FPS militaire AAA complet et expédiable réalisé avec Unreal Engine 5, codé entièrement par IA.
 
 ## Prérequis
 
@@ -27,17 +27,41 @@ Un FPS militaire AAA réalisé avec Unreal Engine 5, codé entièrement par IA.
 
 ```
 Source/ZeroDawn/
-├── Character/       # Personnage FPS (mouvement, saut, slide, sprint)
-├── Weapon/          # Armes (tir, recul, munitions, accessoires)
-├── WeaponSystem/    # Gestion inventaire, attachements
-├── AI/              # Ennemis (Behavior Tree, perception, combat)
-├── Multiplayer/     # Online (PlayerState, GameState, replication)
-├── GameModes/       # TDM, FFA, Domination, S&D, Hardpoint
-├── Progression/     # XP, niveaux, killstreaks, perks, battle pass
-├── UI/              # HUD, menus, scoreboard, killfeed
+├── Character/       # Personnage FPS (mouvement, slide, sprint, ADS, santé)
+├── Weapon/          # Armes (8 types, ballistics, recoil, attachments)
+├── WeaponSystem/    # Inventaire, grenades, inspect, camera shake
+├── AI/              # Ennemis (Behavior Tree, perception sight/hearing)
+├── Multiplayer/     # Online (PlayerState, GameState, sessions Steam)
+├── GameModes/       # TDM, FFA, Domination, S&D, Hardpoint (+ bomb mechanics)
+├── Progression/     # XP/55 niveaux, Battle Pass 100 tiers, perks, killstreaks
+├── UI/              # HUD complet C++, hitmarker, settings, killstreak HUD, match end
 ├── Audio/           # Sons, musique, voix
-└── Interactive/     # Portes, objets destructibles, zones
+├── Interactive/     # Bomb, bomb sites, portes, destructibles
+└── LevelGeneration/ # Maps procédurales (Training, Nuketown, Domination, S&D)
 ```
+
+## Fonctionnalités
+
+- ✅ Mouvement FPS complet (sprint, slide, crouch, ADS, jump)
+- ✅ 8 armes (M4A1, AK-47, XM4, 9mm, .50GS, Marine SP, SR-25, CQB-9)
+- ✅ Attachments, recoil patterns, headshot detection, damage falloff
+- ✅ 5 modes de jeu (TDM 6v6, FFA, Domination, Hardpoint, Search & Destroy)
+- ✅ Bombe S&D avec sites A/B, plant/defuse
+- ✅ AI ennemis avec Behavior Tree, perception, patrouilles
+- ✅ Système de progression (55 niveaux, XP, unlocks)
+- ✅ Battle Pass (100 tiers)
+- ✅ 10 perks (dont 6 implémentés dans cette mission)
+- ✅ Create-a-Class (5 loadouts)
+- ✅ Killstreaks (UAV, CarePackage, AttackHelicopter, Gunship, Nuke)
+- ✅ Killcam (caméra du tueur pendant 3s)
+- ✅ Mode spectateur (S&D, cycle coéquipiers)
+- ✅ Grenade à fragmentation avec dégâts de zone
+- ✅ HUD complet C++ (health, ammo, crosshair, killfeed, scoreboard, timer)
+- ✅ Écran de fin de match avec top players
+- ✅ Menu paramètres (graphismes, audio, contrôles)
+- ✅ Sauvegarde persistante (progression, loadouts, settings, stats carrière)
+- ✅ Multijoueur Steam (sessions, lobby, host/find/join)
+- ✅ K/D, wins/losses, temps de jeu, arme la plus utilisée
 
 ## Modes de jeu
 
@@ -47,10 +71,12 @@ Source/ZeroDawn/
 - Search & Destroy
 - Hardpoint
 
-## Prochaines étapes
+## Génération des Assets
 
-- [ ] Ajouter les modèles 3D (armes, personnages)
-- [ ] Créer les niveaux (solo + multijoueur)
-- [ ] Ajouter les sons et la musique
-- [ ] Textures et matériaux
-- [ ] Animations
+Les fichiers de spécifications sont dans `ZeroDawn/Docs/Specs/` :
+- Weapons/ : 8 fichiers .md (prompts IA + config Meshy v6 8K)
+- Characters/ : Alpha et Bravo soldiers
+- Environments/ : Training, Nuketown, Urban Street, Desert Outpost
+- Audio/ : 21 descriptions sonores dont 8 tirs d'armes
+- UI/ : Icônes de perks (10), killstreaks (5), weapons (8), HUD elements
+- Animations/ : 8 specs (idle, walk, sprint, shoot, reload, inspect, death, slide)
